@@ -1,11 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import models.modules
 import utils
 
 import torch.cuda
 import torch.utils.data
-import torch.optim as optim
 
 import argparse
 import logging
@@ -15,15 +12,13 @@ import os
 LOGGER = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir, 'data')
 
-parser = argparse.ArgumentParser(description='train a model')
-parser.add_argument('file', help='file name')
-parser.add_argument('--workers', type=int, default=4,
-                    help='number of workers on data loader')
-parser.add_argument('--opt', type=int, default=0, choices=range(4),
-                    help='optimization level')
-parser.add_argument('--gpu', type=lambda x: list(map(int, x.split(','))), default=[],
-                    help='device id of gpu')
-parser.add_argument('--debug', action='store_true', default=False, help='debug mode')
+parser = argparse.ArgumentParser(
+    description='Train a model', formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('file', type=str, help='File name.')
+parser.add_argument('--workers', type=int, default=4, help='Number of workers on data loader.')
+parser.add_argument('--opt', type=int, default=0, choices=range(4), help='Optimization level.')
+parser.add_argument('--gpu', type=lambda x: list(map(int, x.split(','))), default=[], help='GPU IDs.')
+parser.add_argument('--debug', action='store_true', default=False, help='Debug mode.')
 
 
 def update_dropblock(module, prob):
@@ -57,17 +52,17 @@ def main():
         torch.torch.backends.cudnn.enabled = True
 
     # model
-    kwargs = {
-        'dropout': params.dropout_prob,
-        'shakedrop': params.shakedrop_prob,
-        'sigaug': params.sigaugment}
-    model = models.create_model(params.dataset, params.model, **kwargs)
+    model = models.create_model(
+        params.dataset, params.model,
+        dropout=params.dropblock_prob,
+        shakedrop=params.shakedrop_prob,
+        sigaug=params.signal_augment)
     model.load_state_dict(snapshot['model'])
 
     LOGGER.debug(model)
 
     # optimizer
-    optimizer = optim.SGD(model.parameters(), lr=0)
+    optimizer = utils.create_optimizer(model, 0, 0, params.train_ndecay)
     scheduler = utils.CosineAnnealingLR(optimizer)
 
     optimizer.load_state_dict(snapshot['optimizer'])
@@ -79,9 +74,9 @@ def main():
     # dataset
     train_dataset = utils.load_dataset(
         params.dataset, DATA_DIR, params.train_crop,
-        train=True, stdaug=True, autoaug=params.autoaugment)
+        train=True, stdaug=True, autoaug=params.auto_augment)
     valid_dataset = utils.load_dataset(
-        params.dataset, DATA_DIR, params.tune_crop,
+        params.dataset, DATA_DIR, params.valid_crop,
         train=False, stdaug=False, autoaug=False)
 
     train_loader = torch.utils.data.DataLoader(
@@ -131,7 +126,8 @@ def main():
         snapshot['optimizer'] = optimizer.state_dict()
         snapshot['scheduler'] = scheduler.state_dict()
 
-        torch.save(snapshot, args.file)
+        torch.save(snapshot, f'{args.file}.temp')
+        os.rename(f'{args.file}.temp', args.file)
 
 
 if __name__ == '__main__':
