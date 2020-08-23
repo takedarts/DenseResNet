@@ -1,14 +1,12 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from .stem import BasicSmallStem, PreActSmallStem, BasicLargeStem, TweakedLargeStem
 from .stem import MobileNetStem
 from .head import BasicHead, PreActHead, MobileNetV2Head, MobileNetV3Head
 from .classifier import BasicClassifier
-from .block import BasicBlock, PreActBlock, PyramidActBlock, MobileNetBlock
+from .block import BasicBlock, PreActBlock, PyramidActBlock, MobileNetBlock, DenseNetBlock
 from .operation import BasicOperation, BottleneckOperation, TweakedOperation
-from .operation import MobileNetOperation, SplitAttentionOperation
+from .operation import MobileNetOperation, SplitAttentionOperation, DenseNetOperation
 from .downsample import BasicDownsample, TweakedDownsample, AverageDownsample, NoneDownsample
-from .junction import BasicJunction, GatedJunction
+from .junction import BasicJunction, ConcatJunction, GatedJunction
 from .modules import Swish, HSwish
 
 import torch.nn as nn
@@ -18,11 +16,10 @@ import math
 
 def make_resnet_layers(depths, channels, groups, bottleneck):
     params = {'groups': groups, 'bottleneck': bottleneck}
-    strides = [1] + [2] * (len(depths) - 1)
     layers = []
 
-    for depth, stride in zip(depths, strides):
-        layers.append((round(channels * bottleneck), stride, params))
+    for i, depth in enumerate(depths):
+        layers.append((round(channels * bottleneck), 1 if i == 0 else 2, params))
         layers.extend((round(channels * bottleneck), 1, params) for _ in range(depth - 1))
         channels *= 2
 
@@ -31,11 +28,10 @@ def make_resnet_layers(depths, channels, groups, bottleneck):
 
 def make_resnest_layers(depths, channels, radix, groups, bottleneck):
     params = {'radix': radix, 'groups': groups, 'bottleneck': bottleneck}
-    strides = [1] + [2] * (len(depths) - 1)
     layers = []
 
-    for depth, stride in zip(depths, strides):
-        layers.append((round(channels * bottleneck), stride, params))
+    for i, depth in enumerate(depths):
+        layers.append((round(channels * bottleneck), 1 if i == 0 else 2, params))
         layers.extend((round(channels * bottleneck), 1, params) for _ in range(depth - 1))
         channels *= 2
 
@@ -129,6 +125,22 @@ def make_efficientnet_layers(width, depth):
     return make_mobilenet_layers(settings, width, depth)
 
 
+def make_densenet_layers(depths, channels, growth, expansion):
+    params = {'growth': growth, 'expansion': expansion}
+    layers = []
+
+    for i, depth, in enumerate(depths):
+        if i != 0:
+            channels //= 2
+            layers.append((channels, 2, params))
+
+        for _ in range(depth):
+            channels += growth
+            layers.append((channels, 1, params))
+
+    return layers
+
+
 def update_params(params, **kwargs):
     new_params = params.copy()
     new_params.update(kwargs)
@@ -216,6 +228,17 @@ large_models = {
         stem_channels=64, head_channels=2048,
         operation=BottleneckOperation),
 
+    'se-resnet-34': update_params(
+        large_basic_params,
+        layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 1),
+        stem_channels=64, head_channels=512, semodule=True),
+
+    'se-resnet-50': update_params(
+        large_basic_params,
+        layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 4),
+        stem_channels=64, head_channels=2048,
+        operation=BottleneckOperation, semodule=True),
+
     'mobilenetv2-1.0': update_params(
         large_basic_params,
         layers=make_mobilenetv2_layers(1.0),
@@ -270,6 +293,20 @@ large_models = {
         stem_channels=64, head_channels=2048,
         stem=TweakedLargeStem, downsample=TweakedDownsample,
         operation=SplitAttentionOperation),
+
+    'densenet-121': update_params(
+        large_basic_params,
+        layers=make_densenet_layers([6, 12, 24, 16], 64, 32, 4),
+        stem_channels=64, head_channels=1024,
+        head=PreActHead, block=DenseNetBlock, operation=DenseNetOperation,
+        downsample=NoneDownsample, junction=ConcatJunction),
+
+    'densenet-169': update_params(
+        large_basic_params,
+        layers=make_densenet_layers([6, 12, 32, 32], 64, 32, 4),
+        stem_channels=64, head_channels=1664,
+        head=PreActHead, block=DenseNetBlock, operation=DenseNetOperation,
+        downsample=NoneDownsample, junction=ConcatJunction),
 }
 
 small_basic_params = update_params(large_basic_params, stem=BasicSmallStem)
@@ -284,6 +321,11 @@ small_models = {
         small_basic_params,
         layers=make_resnet_layers([18, 18, 18], 16, 1, 1),
         stem_channels=16, head_channels=64),
+
+    'se-resnet-110': update_params(
+        small_basic_params,
+        layers=make_resnet_layers([18, 18, 18], 16, 1, 1),
+        stem_channels=16, head_channels=64, semodule=True),
 
     'wideresnet-28k10': update_params(
         small_basic_params,

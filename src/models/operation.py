@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from .modules import DropBlock, SEModule, HSigmoid
 import torch.nn as nn
 import math
@@ -168,3 +166,27 @@ class SplitAttentionOperation(nn.Sequential):
             nn.Conv2d(
                 channels, out_channels, kernel_size=1, padding=0,
                 stride=1, groups=1, bias=False))
+
+
+class DenseNetOperation(nn.Sequential):
+
+    def __init__(self, in_channels, out_channels, stride, growth, expansion,
+                 normalization, activation, **kwargs):
+        if stride != 1:
+            super().__init__(
+                nn.Conv2d(
+                    in_channels, out_channels, kernel_size=1, padding=0,
+                    stride=1, groups=1, bias=False),
+                nn.AvgPool2d(kernel_size=2, stride=stride))
+        else:
+            channels = growth * expansion
+            super().__init__(
+                nn.Conv2d(
+                    in_channels, channels, kernel_size=1, padding=0,
+                    stride=1, groups=1, bias=False),
+                normalization(channels),
+                DropBlock(),
+                activation(inplace=True),
+                nn.Conv2d(
+                    channels, growth, kernel_size=3, padding=1,
+                    stride=1, bias=False))

@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from .config import CONFIG
 from .modules import Reshape
+from .functions import adjusted_concat, adjusted_stack
 
 import torch
 import torch.nn as nn
@@ -37,69 +36,23 @@ class BasicJunction(nn.Module):
         return y, x
 
 
-class GatedConcatenationFunction(autograd.Function):
+class ConcatJunction(nn.Module):
 
-    @staticmethod
-    def forward(ctx, *xs):
-        ctx.channels = [x.shape[1] for x in xs]
+    def __init__(self, num_inputs, in_channels, normalization, activation, **kwargs):
+        super().__init__()
 
-        base = xs[0]
-        y = torch.zeros(  # @UndefinedVariable
-            base.shape[0], base.shape[1] * len(xs), 1, 1,
-            device=base.device, dtype=base.dtype)
-
-        for i, x in enumerate(xs):
-            o = i * base.shape[1]
-
-            if x.shape[1] > base.shape[1]:
-                y[:, o:o + base.shape[1]] = x[:, :base.shape[1]]
-            else:
-                y[:, o:o + x.shape[1]] = x
-
-        return y
-
-    @staticmethod
-    def backward(ctx, g):
-        channels = ctx.channels[0]
-        g_xs = []
-
-        for i, c in enumerate(ctx.channels):
-            o = i * channels
-            g_x = g[:, o:o + min(c, channels)]
-
-            if c > channels:
-                g_x = nn.functional.pad(g_x, (0, 0, 0, 0, 0, c - channels))
-
-            g_xs.append(g_x)
-
-        return tuple(g_xs)
+    def forward(self, y, x):
+        return torch.cat([y, x[-1]], dim=1), x  # @UndefinedVariable
 
 
-class GatedAmplificationFunction(autograd.Function):
-
-    @staticmethod
-    def _concat(channels, *xs):
-        base = xs[-1]
-        y = torch.zeros(  # @UndefinedVariable
-            base.shape[0], len(xs), channels, *base.shape[2:],
-            device=base.device, dtype=base.dtype)
-
-        for i, x in enumerate(xs):
-            if x.shape[1] < y.shape[2]:
-                y[:, i, :x.shape[1]] = x
-            elif x.shape[1] > y.shape[2]:
-                y[:, i] = x[:, :y.shape[2]]
-            else:
-                y[:, i] = x
-
-        return y
+class GatedFunction(autograd.Function):
 
     @staticmethod
     def forward(ctx, w, *xs):
         ctx.save_for_backward(w, *xs)
 
         w = w.unsqueeze(3).unsqueeze(4)
-        y = GatedAmplificationFunction._concat(w.shape[2], *xs)
+        y = adjusted_stack(xs, channels=w.shape[2])
 
         return (w * y).sum(dim=1, dtype=y.dtype)
 
@@ -108,7 +61,7 @@ class GatedAmplificationFunction(autograd.Function):
         w = ctx.saved_variables[0]
         xs = ctx.saved_variables[1:]
 
-        y = GatedAmplificationFunction._concat(w.shape[2], *xs)
+        y = adjusted_stack(xs, channels=w.shape[2])
         w = w.unsqueeze(3).unsqueeze(4)
         g = g.unsqueeze(1)
 
@@ -144,28 +97,34 @@ class GatedJunction(nn.Module):
             Reshape(self.connections + 1, in_channels))
 
     def forward(self, y, x):
-        for i, v in enumerate(x):
-            if not isinstance(v, list):
-                x[i] = [v, v.mean(dim=(2, 3), keepdims=True)]
+        idxs = list(range(max(len(x) - self.connections, 0), len(x)))
 
-        for v in x[-self.connections:]:
-            if v[0].shape[2:] != x[-1][0].shape[2:]:
-                v[0] = nn.functional.avg_pool2d(v[0], kernel_size=2)
+        for i in idxs:
+            # make a list of inbounds
+            if not isinstance(x[i], list):
+                x[i] = [x[i], x[i].mean(dim=(2, 3), keepdims=True)]
 
-        w = GatedConcatenationFunction.apply(
-            y.mean(dim=(2, 3), keepdims=True), *[v[1] for v in x[-self.connections:]])
+            # adjust tensor size
+            while x[i][0].shape[2:] != y.shape[2:]:
+                x[i][0] = nn.functional.avg_pool2d(x[i][0], kernel_size=2)
 
+        # make weights
+        w = adjusted_concat([y.mean(dim=(2, 3), keepdims=True)] + [x[i][1] for i in idxs])
         w = self.op(w)
         w1, w2 = w.split([1, int(w.shape[1] - 1)], dim=1)
         w1, w2 = w1.sigmoid(), w2.softmax(dim=1)
 
-        z = GatedAmplificationFunction.apply(w2, *[v[0] for v in x[-self.connections:]])
+        # adapt weights to features
+        z = GatedFunction.apply(w2, *[x[i][0] for i in idxs])
         y = y * w1.squeeze(1).unsqueeze(2).unsqueeze(3)
 
+        # save weights
         if CONFIG.save_weights:
             self.weights = w2.detach().cpu().numpy()  # @UndefinedVariable
             self.weights = self.weights.reshape(*self.weights.shape[:2], -1)
+            self.indexes = idxs
 
+        # add features
         if z.shape[1] < y.shape[1]:
             y = y + nn.functional.pad(z, (0, 0, 0, 0, 0, int(y.shape[1] - z.shape[1])))
         elif z.shape[1] > y.shape[1]:

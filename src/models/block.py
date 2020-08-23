@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import torch.nn as nn
 from .config import CONFIG
 from .modules import DropBlock, ShakeDrop, SignalAugmentation, SEModule, StochasticDepth
@@ -101,6 +99,25 @@ class MobileNetBlock(Block):
         super().__init__(
             nn.Identity(),
             normalization(out_channels),
+            nn.Identity(),
+            index, length, in_channels, out_channels, stride,
+            operation, downsample, junction, normalization, activation, **kwargs)
+
+
+class DenseNetBlock(Block):
+
+    def __init__(self, index, length, in_channels, out_channels, stride,
+                 operation, downsample, junction, normalization, activation, **kwargs):
+        if stride != 1:
+            junction = NoneJunction
+            kwargs['semodule'] = False
+            kwargs['shakedrop'] = 0
+            kwargs['stochdepth'] = 0
+            kwargs['sigaug'] = 0
+
+        super().__init__(
+            nn.Sequential(normalization(in_channels), DropBlock(), activation(inplace=True)),
+            nn.Identity(),
             nn.Identity(),
             index, length, in_channels, out_channels, stride,
             operation, downsample, junction, normalization, activation, **kwargs)
