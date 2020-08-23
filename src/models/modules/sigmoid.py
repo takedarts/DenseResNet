@@ -1,10 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from ..functions import h_sigmoid
 import torch.nn as nn
-
-
-def h_sigmoid(x, inplace=False):
-    return nn.functional.relu6(x + 3, inplace=inplace) / 6
 
 
 class HSigmoid(nn.Module):

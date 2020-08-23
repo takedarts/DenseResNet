@@ -1,28 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-import torch
+from ..functions import swish, h_swish
 import torch.nn as nn
-import torch.autograd as autograd
-
-
-class SwishFunction(autograd.Function):
-
-    @staticmethod
-    def forward(ctx, i):
-        result = i * torch.sigmoid(i)  # @UndefinedVariable
-        ctx.save_for_backward(i)
-
-        return result
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        i = ctx.saved_variables[0]
-        sigmoid_i = torch.sigmoid(i)  # @UndefinedVariable
-
-        return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
-
-
-swish = SwishFunction.apply
 
 
 class Swish(nn.Module):
@@ -32,10 +9,6 @@ class Swish(nn.Module):
 
     def forward(self, x):
         return swish(x)
-
-
-def h_swish(x, inplace=False):
-    return x * nn.functional.relu6(x + 3, inplace=inplace) / 6
 
 
 class HSwish(nn.Module):
