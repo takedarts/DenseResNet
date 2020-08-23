@@ -58,12 +58,26 @@ DenseResNets are published in a following paper:
     ```
     % python src/create.py [file name] [dataset name] [model name] --config [config file]
     ```
-    For example, a following command creates a model file of resnet-110 for CIFAR-100.
+    For example, a following command creates a model file of ResNet-110 for CIFAR-100.
     ```
     % python src/create.py model.pth cifar100 resnet-110 --config config/cifar100/resnet-110.txt
-    ```    
+    ```
 2. Train the model.
     A following command train the model.
     ```
     % python src/train.py [file name] --gpu [GPU ID]
+    ```
+
+## Informations
+- `src/model.py` shows a list of supported models.
+    ```
+    % python src/model.py [dataset name]
+    ```
+- `src/view.py` shows the details of the model file.
+    ```
+    % python src/view.py [file name]
+    ```
+- `src/flops.py` shows the required FLOPs of the model.
+    ```
+    % python src/flops.py [file name]
     ```
