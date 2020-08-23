@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import utils
 
 import logging
@@ -16,9 +14,10 @@ DATASETS = {
     'imagenet': lambda: prepare_imagenet(),
     'tinyimagenet': lambda: prepare_tinyimagenet()}
 
-parser = argparse.ArgumentParser(description='prepare a dataset')
-parser.add_argument('name', choices=DATASETS.keys(), help='dataset name')
-parser.add_argument('--debug', action='store_true', default=False, help='debug mode')
+parser = argparse.ArgumentParser(
+    description='Prepare a dataset', formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('name', choices=DATASETS.keys(), help='Dataset name.')
+parser.add_argument('--debug', action='store_true', default=False, help='Debug mode.')
 
 
 def prepare_imagenet():

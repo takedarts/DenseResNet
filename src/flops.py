@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import models
 
 import utils.pthflops
@@ -16,9 +14,10 @@ warnings.filterwarnings('ignore', category=torch.jit.TracerWarning)
 LOGGER = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir, 'data')
 
-parser = argparse.ArgumentParser(description='calculate flops')
-parser.add_argument('file', help='file name')
-parser.add_argument('--debug', action='store_true', default=False, help='debug mode')
+parser = argparse.ArgumentParser(
+    description='Calculate flops.', formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('file', help='File name.')
+parser.add_argument('--debug', action='store_true', default=False, help='Debug mode.')
 
 
 def count_python_op(node):
@@ -110,13 +109,15 @@ def main():
     models.CONFIG.gate_reduction = params.gate_reduction
     models.CONFIG.gate_connections = params.gate_connections
 
-    model = models.create_model(params.dataset, params.model)
+    model = models.create_model(
+        params.dataset, params.model,
+        shakedrop=params.shakedrop_prob)
     print('parameters={:,d}'.format(
         sum(p.numel() for p in model.parameters() if p.requires_grad)))
 
     # flops
     image = utils.load_dataset(
-        params.dataset, DATA_DIR, params.tune_crop,
+        params.dataset, DATA_DIR, params.valid_crop,
         train=False, stdaug=False, autoaug=False)[0][0].unsqueeze(0)
     flops, groups = utils.pthflops.count_ops(
         model, image, custom_ops=custom_ops, verbose=args.debug, print_readable=False)
