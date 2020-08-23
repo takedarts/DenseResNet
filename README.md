@@ -12,3 +12,6 @@ Experiental results show that DenseResNets achieve higher performance than conve
 
 ［NOTE］This implementation concains some unefficient codes because the purpuse is performance evalutation of DenseResNets.
 <div class="clearfix"></div>
+
+DenseResNets are published in a following paper:
+1. Atsushi Takeda. "Dense Residual Networks for Image Classification." The 23rd Meeting on Image Recognition and Understanding (MIRU2020), 2020 (in Japanese).
