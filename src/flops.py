@@ -21,9 +21,9 @@ parser.add_argument('--debug', action='store_true', default=False, help='Debug m
 
 
 def count_python_op(node):
-    if node.pyname() == 'GatedConcatenationFunction':
+    if node.pyname() == 'AdjustedStackFunction':
         return 0
-    elif node.pyname() == 'GatedAmplificationFunction':
+    elif node.pyname() == 'GatedFunction':
         inputs = list(node.inputs())
 
         size = utils.pthflops.string_to_shape(inputs[-1])
