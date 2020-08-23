@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 from torch.optim.lr_scheduler import _LRScheduler
 import math
 
