@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import torch.nn as nn
 from .parameter import PARAMETERS
 
@@ -8,7 +6,7 @@ class Model(nn.Module):
 
     def __init__(self, stem, block, head, classifier,
                  layers, stem_channels, head_channels,
-                 dropout, features, **kwargs):
+                 dropout, **kwargs):
         super().__init__()
 
         # make blocks
@@ -35,18 +33,13 @@ class Model(nn.Module):
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
-        # features
-        self.feature_indexes = features
-
     def get_features(self, x):
         x = [self.stem(x)]
         f = []
 
         for i, block in enumerate(self.blocks):
             x = block(x)
-
-            if i in self.feature_indexes:
-                f.append(x[-1])
+            f.append(x[-1])
 
         y = self.head(x[-1])
 
@@ -78,8 +71,7 @@ def create_model(dataset_name, model_name, **kwargs):
         'dropout': 0.0,
         'shakedrop': 0.0,
         'stochdepth': 0.0,
-        'sigaug': 0.0,
-        'features': set()}
+        'sigaug': 0.0}
 
     model_params.update(PARAMETERS[dataset_name][model_name])
     model_params.update(kwargs)
