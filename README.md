@@ -2,7 +2,7 @@
 
 ## What is DenseResNet ?
 
-<span style="float: right">[<img alt="Architecture of DenseResNets" src="res/architecture.png" width="250px">](res/architecture.png)</span>
+[<img alt="Architecture of DenseResNets" src="res/architecture.png" width="250px" align="right">](res/architecture.png)
 
 DenseResNet is a Density connected Residual convolutional neural Network for image recognition tasks.
 An architecture of DenseResNets is a stack of Residual Blocks just like ResNets, though the circuit design is similar to DenseNets.
@@ -11,4 +11,4 @@ Gate Modules contain attention mechanisms which select useful features dynamical
 Experiental results show that DenseResNets achieve higher performance than conventional ResNets in image classification tasks.
 
 ［NOTE］This implementation concains some unefficient codes because the purpuse is performance evalutation of DenseResNets.
-
+<div class="clearfix"></div>
