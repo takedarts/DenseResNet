@@ -1,6 +1,4 @@
-# An implementation of DenseResNet
-
-## What is DenseResNet ?
+# What is DenseResNet ?
 
 [<img alt="Architecture of DenseResNets" src="res/architecture.png" width="250px" align="right">](res/architecture.png)
 
@@ -15,3 +13,57 @@ Experiental results show that DenseResNets achieve higher performance than conve
 
 DenseResNets are published in a following paper:
 1. Atsushi Takeda. "Dense Residual Networks for Image Classification." The 23rd Meeting on Image Recognition and Understanding (MIRU2020), 2020 (in Japanese).
+
+# How to use
+## Dataset preparation
+### [ImageNet]
+1. Download following files from ImageNet web site.
+    - ILSVRC2012_devkit_t12.tar.gz
+    - ILSVRC2012_img_train.tar
+    - ILSVRC2012_img_val.tar
+2. Save these files in `data/imagenet`.
+    ```
+    % tree data
+    data
+    └── imagenet
+        ├── ILSVRC2012_devkit_t12.tar.gz
+        ├── ILSVRC2012_img_train.tar
+        ├── ILSVRC2012_img_val.tar
+        └── readme.txt
+    ```
+3. Run a preparation script: `src/prepare.py`.
+    ```
+    % python src/prepare.py imagenet
+    ```
+
+### [TinyImagenet]
+1. Download a following file from [https://tiny-imagenet.herokuapp.com/](https://tiny-imagenet.herokuapp.com/).
+    - tiny-imagenet-200.zip
+2. Save these files in `data/tinyimagenet`.
+    ```
+    % tree data
+    data
+    └── tinyimagenet
+        ├── readme.txt
+        └── tiny-imagenet-200.zip
+    ```
+3. Run a preparation script: `src/prepare.py`.
+    ```
+    % python src/prepare.py tinyimagenet
+    ```
+
+## Training
+1. Create a model file.
+    A model file must be created before training. A following command creates a initialized model file.
+    ```
+    % python src/create.py [file name] [dataset name] [model name] --config [config file]
+    ```
+    For example, a following command creates a model file of resnet-110 for CIFAR-100.
+    ```
+    % python src/create.py model.pth cifar100 resnet-110 --config config/cifar100/resnet-110.txt
+    ```    
+2. Train the model.
+    A following command train the model.
+    ```
+    % python src/train.py [file name] --gpu [GPU ID]
+    ```
