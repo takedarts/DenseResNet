@@ -62,7 +62,7 @@ def main():
     LOGGER.debug(model)
 
     # optimizer
-    optimizer = utils.create_optimizer(model, 0, 0, params.train_ndecay)
+    optimizer = utils.create_optimizer(model, 0, 0, params.train_bdecay)
     scheduler = utils.CosineAnnealingLR(optimizer)
 
     optimizer.load_state_dict(snapshot['optimizer'])

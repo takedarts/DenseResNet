@@ -68,9 +68,9 @@ def main():
 
     # optimizer
     optimizer = utils.create_optimizer(
-        model, args.train_lr, args.train_wdecay, args.train_ndecay)
+        model, args.train_lr, args.train_wdecay, args.train_bdecay)
     tuner = utils.create_optimizer(
-        model.classifier, args.tune_lr, args.tune_wdecay, True)
+        model.classifier, args.tune_lr, args.tune_wdecay)
 
     scheduler = utils.CosineAnnealingLR(optimizer, args.train_epoch, args.train_warmup)
 

@@ -5,7 +5,7 @@ OPTIONS = [
     ('train-warmup', 5, 'Number of epochs for warmup at training.'),
     ('train-lr', 0.025, 'Initial learning rate at training'),
     ('train-wdecay', 0.0001, 'Weight decay  (L2 penalty) at training.'),
-    ('train-ndecay', False, 'Adaptation of decay to normalization parameters.'),
+    ('train-bdecay', False, 'Adaptation of decay to bias parameters.'),
     ('tune-batch', 256, 'Batch size at tuning.'),
     ('tune-epoch', 60, 'Number of epochs at tuning.'),
     ('tune-lr', 0.004, 'Learning rate at tuning.'),

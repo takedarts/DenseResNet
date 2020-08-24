@@ -7,28 +7,41 @@ NORM_CLASSES = set([
     nn.BatchNorm3d,
 ])
 
+BIAS_CLASSES = set([
+    nn.Conv1d,
+    nn.Conv2d,
+    nn.Conv3d,
+    nn.Linear,
+])
 
-def create_optimizer(model, lr, weight_decay, norm_decay):
-    if norm_decay:
+
+def create_optimizer(model, lr, weight_decay, bias_decay=False):
+    if bias_decay:
         return optim.SGD(
-            model.parameters(), lr=lr, weight_decay=weight_decay, momentum=0.9, nesterov=True)
+            [p for p in model.parameters() if p.requires_grad],
+            lr=lr, weight_decay=weight_decay, momentum=0.9, nesterov=True)
 
     norm_names = set()
-    norm_params = []
-    other_params = []
+    bias_names = set()
+    nodecay_params = []
+    decay_params = []
 
     for name, module in model.named_modules():
         if type(module) in NORM_CLASSES:
             norm_names.add(name)
+        elif type(module) in BIAS_CLASSES:
+            bias_names.add(f'{name}.bias')
 
     for name, param in model.named_parameters():
-        if name.rsplit('.', maxsplit=1)[0] in norm_names:
-            norm_params.append(param)
+        if not param.requires_grad:
+            continue
+        elif name.rsplit('.', maxsplit=1)[0] in norm_names or name in bias_names:
+            nodecay_params.append(param)
         else:
-            other_params.append(param)
+            decay_params.append(param)
 
     parameters = [
-        {'params': norm_params, 'weight_decay': 0.0},
-        {'params': other_params, 'weight_decay': weight_decay}]
+        {'params': nodecay_params, 'weight_decay': 0.0},
+        {'params': decay_params, 'weight_decay': weight_decay}]
 
     return optim.SGD(parameters, lr=lr, momentum=0.9, nesterov=True)

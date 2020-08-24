@@ -4,7 +4,7 @@ train-epoch: 300
 train-warmup: 5
 train-lr: 0.05
 train-wdecay: 0.0005
-train-ndecay: False
+train-bdecay: False
 tune-batch: 128
 tune-epoch: 30
 tune-lr: 0.001
