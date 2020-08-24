@@ -1,4 +1,6 @@
-# This was imported from https://github.com/DeepVoltaire/AutoAugment
+# This code is 'AutoAugment' imported from
+#   https://github.com/DeepVoltaire/AutoAugment.
+# This is published under MIT License (2020/08/25).
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
 import random

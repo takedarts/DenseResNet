@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # This code is 'pytorch-estimate-flops' imported from
-#   https://github.com/1adrianb/pytorch-estimate-flops
+#   https://github.com/1adrianb/pytorch-estimate-flops.
+# This is published under BSD 3-Clause License (2020/08/25).
 import re
 from functools import reduce
 from collections import defaultdict
