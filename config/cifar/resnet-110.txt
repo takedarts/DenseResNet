@@ -11,7 +11,7 @@ tune-lr: 0.001
 tune-wdecay: 0.0005
 valid-crop: 32
 cutmix-beta: 1.0
-cutmix-prob: 0.0
+cutmix-prob: 1.0
 mixup-beta: 1.0
 mixup-prob: 0.0
 auto-augment: False
