@@ -83,7 +83,7 @@ DenseResNets are published in a following paper:
     ```
 
 # Performances
-[NOTE] Settings of above evaluations might be different from reported ones in original papers.
+[NOTE] Settings of following evaluations might be different from reported ones in original papers.
 ## Image Classification
 ### CIFAR-100
 |Model|# of params|flops|top-1 acc.|reported acc.|settings|
