@@ -1,6 +1,6 @@
 train-batch: 64
 train-crop: 32
-train-epoch: 300
+train-epoch: 1800
 train-warmup: 5
 train-lr: 0.05
 train-wdecay: 0.0005
