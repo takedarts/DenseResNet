@@ -87,11 +87,11 @@ DenseResNets are published in a following paper:
 ## Image Classification
 ### CIFAR-100
 |Model|# of params|flops|top-1 acc.|settings|
-|---:|:---:|:---:|:---:|:---:|:---|
+|---:|:---:|:---:|:---:|:---|
 |resnet-110<br>dense-resnet-110|1.74M<br>2.23M|258M<br>264M|79.03%<br>80.34%|[resnet-110.txt](config/cifar/resnet-110.txt)|
 
 ### CIFAR-10
 |Model|# of params|flops|top-1 acc.|settings|
-|---:|:---:|:---:|:---:|:---:|:---|
+|---:|:---:|:---:|:---:|:---|
 |resnet-110<br>dense-resnet-110|1.74M<br>2.23M|258M<br>264M|96.40%<br>96.59%|[resnet-110.txt](config/cifar/resnet-110.txt)|
 
