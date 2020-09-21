@@ -23,7 +23,7 @@ OPTIONS = [
     ('dropblock-size', 7, 'Drop block size of DropBlock.'),
     ('stochdepth-prob', 0.0, 'Drop probability of stochastic depth.'),
     ('signal-augment', 0.0, 'Standard deviation of signal augmentation.'),
-    ('semodule-reduction', 0.0, 'Reduction ratio of Squeeze-and-Excitation modules.'),
+    ('semodule-reduction', 0, 'Reduction ratio of Squeeze-and-Excitation modules.'),
     ('gate-reduction', 8, 'reduction rate of gate modules in DenseResNets.'),
     ('gate-connections', 4, 'number of connections of gate modules in DenseResNets.'),
     ('seed', 2020, 'Seed of random libraries.'),
