@@ -63,7 +63,7 @@ DenseResNets are published in a following paper:
     % python src/create.py model.pth cifar100 resnet-110 --config config/cifar/resnet-110.txt
     ```
 2. Train the model.
-    A following command train the model.
+    A following command trains the model.
     ```
     % python src/train.py [file name] --gpu [GPU ID]
     ```
