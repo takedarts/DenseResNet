@@ -82,8 +82,8 @@ DenseResNets are published in a following paper:
     % python src/flops.py [file name]
     ```
 
+<!--
 # Performances
-[NOTE] Settings of following evaluations might be different from reported ones in original papers.
 ## Image Classification
 ### ImageNet-1k
 |Model|# params|flops|top-1 acc.|settings|
@@ -100,4 +100,4 @@ DenseResNets are published in a following paper:
 |Model|# params|flops|top-1 acc.|settings|
 |---:|:---:|:---:|:---:|:---|
 |ResNet-110<br>Dense-ResNet-110|1.74M<br>2.23M|258M<br>264M|96.40%<br>96.59%|[resnet-110.txt](config/cifar/resnet-110.txt)|
-
+-->
