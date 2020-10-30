@@ -1,123 +1,119 @@
 import torch.nn as nn
 from .config import CONFIG
-from .modules import DropBlock, ShakeDrop, SignalAugmentation, SEModule, StochasticDepth
+from .modules import ShakeDrop, SignalAugmentation, SEModule, AFFModule, StochasticDepth
 from .downsample import NoneDownsample
 from .junction import NoneJunction
 
 
-class Block(nn.Module):
+class _Block(nn.Module):
 
-    def __init__(self, pre_operation, post_operation, block_activation,
-                 index, length, in_channels, out_channels, stride,
-                 operation, downsample, junction, normalization, activation,
-                 semodule, shakedrop, stochdepth, sigaug, **kwargs):
+    def __init__(self, index, settings, operation, downsample, junction, subsequent,
+                 normalization, activation, semodule, affmodule, dropblock,
+                 shakedrop, stochdepth, signalaugment, **kwargs):
         super().__init__()
+        in_channels, out_channels, stride = settings[index]
 
-        modules = [
-            pre_operation,
-            operation(
-                in_channels, out_channels, stride=stride,
-                normalization=normalization, activation=activation, **kwargs),
-            post_operation]
-
-        if semodule:
-            modules.append(SEModule(out_channels, CONFIG.semodule_reduction, activation))
-
-        self.op = nn.Sequential(
-            *modules,
-            SignalAugmentation(std=sigaug),
-            ShakeDrop(drop_prob=shakedrop * (index + 1) / length),
-            StochasticDepth(drop_prob=stochdepth * (index + 1) / length))
-
+        # downsample
         self.downsample = downsample(
             in_channels, out_channels, stride=stride,
-            normalization=normalization, **kwargs)
+            normalization=normalization, activation=activation,
+            dropblock=dropblock, **kwargs)
 
+        # convolution layers
+        self.operation = operation(
+            in_channels, out_channels, stride=stride,
+            normalization=normalization, activation=activation,
+            dropblock=dropblock, **kwargs)
+
+        # attention modules
+        if semodule:
+            self.semodule = SEModule(
+                out_channels, CONFIG.semodule_reduction, activation=activation)
+
+        if affmodule:
+            self.affmodule = AFFModule(
+                out_channels, CONFIG.affmodule_reduction,
+                normalization=normalization, activation=activation)
+
+        # noise
+        self.noise = nn.Sequential(
+            SignalAugmentation(std=signalaugment),
+            ShakeDrop(drop_prob=shakedrop * (index + 1) / len(settings)),
+            StochasticDepth(drop_prob=stochdepth * (index + 1) / len(settings)))
+
+        # junction
         self.junction = junction(
-            index + 1, out_channels,
-            normalization=normalization, activation=activation, **kwargs)
+            index, settings, normalization=normalization, activation=activation, **kwargs)
 
-        self.activation = block_activation
+        # activation after a block
+        self.subsequent = subsequent
 
     def forward(self, x):
         # operation
-        y = self.op(x[-1])
+        z = self.downsample(x[-1])
+        y = self.operation(x[-1])
+
+        # attention
+        if hasattr(self, 'semodule'):
+            y = self.semodule(y)
+
+        if hasattr(self, 'affmodule'):
+            y, z = self.affmodule(y, z)
+
+        # noise
+        y = self.noise(y)
 
         # junction
-        y, x = self.junction(y, x[:-1] + [self.downsample(x[-1])])
+        y, x = self.junction(y, x[:-1] + [z])
 
         # output
-        x.append(self.activation(y))
+        x.append(self.subsequent(y))
 
         return x
 
 
-class BasicBlock(Block):
+class BasicBlock(_Block):
 
-    def __init__(self, index, length, in_channels, out_channels, stride,
-                 operation, downsample, junction, normalization, activation, **kwargs):
+    def __init__(self, index, settings, operation, downsample, junction, **kwargs):
+        _, out_channels, _ = settings[index]
+
         super().__init__(
-            nn.Identity(),
-            nn.Sequential(normalization(out_channels), DropBlock()),
-            activation(inplace=True),
-            index, length, in_channels, out_channels, stride,
-            operation, downsample, junction, normalization, activation, **kwargs)
+            index, settings, operation, downsample, junction, nn.ReLU(inplace=True), **kwargs)
 
 
-class PreActBlock(Block):
+class PreActBlock(_Block):
 
-    def __init__(self, index, length, in_channels, out_channels, stride,
-                 operation, downsample, junction, normalization, activation, **kwargs):
+    def __init__(self, index, settings, operation, downsample, junction, **kwargs):
+        in_channels, _, _ = settings[index]
+
         super().__init__(
-            nn.Sequential(normalization(in_channels), DropBlock(), activation(inplace=True)),
-            nn.Identity(),
-            nn.Identity(),
-            index, length, in_channels, out_channels, stride,
-            operation, downsample, junction, normalization, activation, **kwargs)
+            index, settings, operation, downsample, junction, nn.Identity(), **kwargs)
 
 
-class PyramidActBlock(Block):
+class MobileNetBlock(_Block):
 
-    def __init__(self, index, length, in_channels, out_channels, stride,
-                 operation, downsample, junction, normalization, activation, **kwargs):
-        super().__init__(
-            normalization(in_channels),
-            normalization(out_channels),
-            nn.Identity(),
-            index, length, in_channels, out_channels, stride,
-            operation, downsample, junction, normalization, activation, **kwargs)
+    def __init__(self, index, settings, operation, downsample, junction, **kwargs):
+        in_channels, out_channels, stride = settings[index]
 
-
-class MobileNetBlock(Block):
-
-    def __init__(self, index, length, in_channels, out_channels, stride,
-                 operation, downsample, junction, normalization, activation, **kwargs):
         if downsample == NoneDownsample:
             if stride != 1 or in_channels != out_channels:
                 junction = NoneJunction
 
         super().__init__(
-            nn.Identity(),
-            normalization(out_channels),
-            nn.Identity(),
-            index, length, in_channels, out_channels, stride,
-            operation, downsample, junction, normalization, activation, **kwargs)
+            index, settings, operation, downsample, junction, nn.Identity(), **kwargs)
 
 
-class DenseNetBlock(Block):
+class DenseNetBlock(_Block):
 
-    def __init__(self, index, length, in_channels, out_channels, stride,
-                 operation, downsample, junction, normalization, activation, **kwargs):
+    def __init__(self, index, settings, operation, downsample, junction, **kwargs):
+        in_channels, _, stride = settings[index]
+
         if stride != 1:
             junction = NoneJunction
             kwargs['semodule'] = False
-            kwargs['shakedrop'] = 0
-            kwargs['stochdepth'] = 0
-            kwargs['sigaug'] = 0
+            kwargs['shakedrop'] = 0.0
+            kwargs['stochdepth'] = 0.0
+            kwargs['signalaugment'] = 0.0
 
         super().__init__(
-            nn.Sequential(normalization(in_channels), DropBlock(), activation(inplace=True)),
-            nn.Identity(),
-            nn.Identity(),
-            index, length, in_channels, out_channels, stride,
-            operation, downsample, junction, normalization, activation, **kwargs)
+            index, settings, operation, downsample, junction, nn.Identity(), **kwargs)

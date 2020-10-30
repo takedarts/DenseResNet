@@ -12,7 +12,7 @@ class ShakeDropFunction(autograd.Function):
             ctx.save_for_backward(gate)
 
             if gate == 0:
-                alpha = torch.empty(x.shape[0], device=x.device, dtype=x.dtype)  # @UndefinedVariable
+                alpha = torch.empty(x.shape[0], device=x.device, dtype=x.dtype)
                 alpha = alpha.uniform_(*alpha_range).reshape(alpha.shape[0], 1, 1, 1)
                 return alpha * x
             else:
@@ -26,7 +26,7 @@ class ShakeDropFunction(autograd.Function):
         gate = ctx.saved_tensors[0]
 
         if gate == 0:
-            beta = torch.empty(grad.shape[0], device=grad.device, dtype=grad.dtype)  # @UndefinedVariable
+            beta = torch.empty(grad.shape[0], device=grad.device, dtype=grad.dtype)
             beta = beta.uniform_(0, 1).reshape(beta.shape[0], 1, 1, 1)
 
             return beta * grad, None, None, None

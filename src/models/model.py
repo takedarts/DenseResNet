@@ -1,31 +1,31 @@
-import torch.nn as nn
 from .parameter import PARAMETERS
+import torch.nn as nn
+import itertools
 
 
 class Model(nn.Module):
 
-    def __init__(self, stem, block, head, classifier,
-                 layers, stem_channels, head_channels,
-                 dropout, **kwargs):
+    def __init__(self, stem, block, head, classifier, layers,
+                 stem_channels, head_channels, dropout, **kwargs):
         super().__init__()
 
         # make blocks
+        channels = [stem_channels] + [c for c, _, _ in layers]
+        settings = [(ic, oc, s) for ic, oc, (_, s, _) in zip(channels[:-1], channels[1:], layers)]
+        dropblocks = list(itertools.accumulate(s - 1 for _, s, _ in layers))
+        dropblocks = [v >= dropblocks[-1] - 1 for v in dropblocks]
         blocks = []
-        channels = stem_channels
 
-        for i, (out_channels, stride, params) in enumerate(layers):
+        for i, ((_, _, params), dropblock) in enumerate(zip(layers, dropblocks)):
             block_kwargs = kwargs.copy()
             block_kwargs.update(params)
-
-            blocks.append(
-                block(i, len(layers), channels, out_channels, stride, **block_kwargs))
-            channels = out_channels
+            blocks.append(block(i, settings, dropblock=dropblock, ** block_kwargs))
 
         # modules
         self.stem = stem(stem_channels, **kwargs)
         self.blocks = nn.ModuleList(blocks)
-        self.head = head(channels, head_channels, **kwargs)
-        self.dropout = nn.Dropout(p=dropout, inplace=True) if dropout != 0 else nn.Identity()
+        self.head = head(channels[-1], head_channels, **kwargs)
+        self.dropout = nn.Dropout(p=dropout, inplace=True)
         self.classifier = classifier(head_channels, **kwargs)
 
         # initialize
@@ -68,10 +68,11 @@ def create_model(dataset_name, model_name, **kwargs):
         'normalization': nn.BatchNorm2d,
         'activation': nn.ReLU,
         'semodule': False,
+        'affmodule': False,
         'dropout': 0.0,
         'shakedrop': 0.0,
         'stochdepth': 0.0,
-        'sigaug': 0.0}
+        'signalaugment': 0.0}
 
     model_params.update(PARAMETERS[dataset_name][model_name])
     model_params.update(kwargs)

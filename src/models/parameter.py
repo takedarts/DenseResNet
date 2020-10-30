@@ -2,12 +2,14 @@ from .stem import BasicSmallStem, PreActSmallStem, BasicLargeStem, TweakedLargeS
 from .stem import MobileNetStem
 from .head import BasicHead, PreActHead, MobileNetV2Head, MobileNetV3Head
 from .classifier import BasicClassifier
-from .block import BasicBlock, PreActBlock, PyramidActBlock, MobileNetBlock, DenseNetBlock
-from .operation import BasicOperation, BottleneckOperation, TweakedOperation
+from .block import BasicBlock, PreActBlock, MobileNetBlock, DenseNetBlock
+from .operation import BasicOperation, BottleneckOperation, SelectedKernelOperation
+from .operation import SingleActBasicOperation, SingleActBottleneckOperation
+from .operation import TweakedBottleneckOperation, TweakedSlectedKernelOperation
 from .operation import MobileNetOperation, SplitAttentionOperation, DenseNetOperation
 from .downsample import BasicDownsample, TweakedDownsample, AverageDownsample, NoneDownsample
-from .junction import BasicJunction, ConcatJunction, GatedJunction
-from .modules import Swish, HSwish
+from .junction import BasicJunction, ConcatJunction, DenseJunction, SkipJunction
+from .modules import Swish, HSwish, HSigmoid
 
 import torch.nn as nn
 import itertools
@@ -27,6 +29,18 @@ def make_resnet_layers(depths, channels, groups, bottleneck):
 
 
 def make_resnest_layers(depths, channels, radix, groups, bottleneck):
+    params = {'radix': radix, 'groups': groups, 'bottleneck': bottleneck}
+    layers = []
+
+    for i, depth in enumerate(depths):
+        layers.append((round(channels * bottleneck), 1 if i == 0 else 2, params))
+        layers.extend((round(channels * bottleneck), 1, params) for _ in range(depth - 1))
+        channels *= 2
+
+    return layers
+
+
+def make_skresnet_layers(depths, channels, radix, groups, bottleneck):
     params = {'radix': radix, 'groups': groups, 'bottleneck': bottleneck}
     layers = []
 
@@ -157,32 +171,6 @@ def update_models(models, **kwargs):
     return new_models
 
 
-def resnetd_models(models):
-    new_models = {}
-
-    for name, params in models.items():
-        if not name.startswith('resnet-'):
-            continue
-
-        new_params = params.copy()
-
-        if new_params['stem'] == BasicLargeStem:
-            new_params['stem'] = TweakedLargeStem
-
-        if new_params['operation'] == BottleneckOperation:
-            new_params['operation'] = TweakedOperation
-
-        if new_params['downsample'] == BasicDownsample:
-            new_params['downsample'] = TweakedDownsample
-
-        if new_params == params:
-            continue
-
-        new_models[f'resnetd-{name[7:]}'] = new_params
-
-    return new_models
-
-
 def dense_models(models):
     new_models = {}
 
@@ -190,14 +178,33 @@ def dense_models(models):
         new_params = params.copy()
 
         if new_params['junction'] == BasicJunction:
-            new_params['junction'] = GatedJunction
+            new_params['junction'] = DenseJunction
         else:
             continue
 
         if new_params['downsample'] == NoneDownsample:
             new_params['downsample'] = AverageDownsample
 
-        new_models[f'dense-{name}'] = new_params
+        new_models[f'Dense-{name}'] = new_params
+
+    return new_models
+
+
+def skip_models(models):
+    new_models = {}
+
+    for name, params in models.items():
+        new_params = params.copy()
+
+        if new_params['junction'] == BasicJunction:
+            new_params['junction'] = SkipJunction
+        else:
+            continue
+
+        if new_params['downsample'] == NoneDownsample:
+            new_params['downsample'] = AverageDownsample
+
+        new_models[f'Skip-{name}'] = new_params
 
     return new_models
 
@@ -212,96 +219,134 @@ large_basic_params = {
     'junction': BasicJunction}
 
 large_models = {
-    'resnet-18': update_params(
+    'ResNet-18': update_params(
         large_basic_params,
         layers=make_resnet_layers([2, 2, 2, 2], 64, 1, 1),
         stem_channels=64, head_channels=512),
 
-    'resnet-34': update_params(
+    'ResNet-34': update_params(
         large_basic_params,
         layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 1),
         stem_channels=64, head_channels=512),
 
-    'resnet-50': update_params(
+    'ResNet-50': update_params(
         large_basic_params,
         layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 4),
         stem_channels=64, head_channels=2048,
         operation=BottleneckOperation),
 
-    'se-resnet-34': update_params(
+    'ResNet-101': update_params(
+        large_basic_params,
+        layers=make_resnet_layers([3, 4, 23, 3], 64, 1, 4),
+        stem_channels=64, head_channels=2048,
+        operation=BottleneckOperation),
+
+    'SE-ResNet-34': update_params(
         large_basic_params,
         layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 1),
         stem_channels=64, head_channels=512, semodule=True),
 
-    'se-resnet-50': update_params(
+    'SE-ResNet-50': update_params(
         large_basic_params,
         layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 4),
         stem_channels=64, head_channels=2048,
         operation=BottleneckOperation, semodule=True),
 
-    'mobilenetv2-1.0': update_params(
+    'SK-ResNet-50': update_params(
         large_basic_params,
-        layers=make_mobilenetv2_layers(1.0),
-        stem_channels=32, head_channels=1280,
-        stem=MobileNetStem, head=MobileNetV2Head,
-        block=MobileNetBlock, operation=MobileNetOperation,
-        downsample=NoneDownsample, activation=nn.ReLU6),
+        layers=make_skresnet_layers([3, 4, 6, 3], 64, 2, 1, 4),
+        stem_channels=64, head_channels=2048,
+        operation=SelectedKernelOperation),
 
-    'mobilenetv2-0.5': update_params(
+    'ResNetD-50': update_params(
         large_basic_params,
-        layers=make_mobilenetv2_layers(0.5),
-        stem_channels=16, head_channels=1280,
-        stem=MobileNetStem, head=MobileNetV2Head,
-        block=MobileNetBlock, operation=MobileNetOperation,
-        downsample=NoneDownsample, activation=nn.ReLU6),
+        layers=make_resnet_layers([3, 4, 6, 3], 64, 1, 4),
+        stem_channels=64, head_channels=2048,
+        stem=TweakedLargeStem, downsample=TweakedDownsample,
+        operation=TweakedBottleneckOperation),
 
-    'mobilenetv3-large': update_params(
+    'SK-ResNetD-50': update_params(
         large_basic_params,
-        layers=make_mobilenetv3_large_layers(1.0),
-        stem_channels=16, head_channels=1280,
-        stem=MobileNetStem, head=MobileNetV3Head,
-        block=MobileNetBlock, operation=MobileNetOperation,
-        downsample=NoneDownsample, activation=HSwish),
+        layers=make_skresnet_layers([3, 4, 6, 3], 64, 2, 1, 4),
+        stem_channels=64, head_channels=2048,
+        stem=TweakedLargeStem, downsample=TweakedDownsample,
+        operation=TweakedSlectedKernelOperation),
 
-    'efficientnet-b0': update_params(
+    'ResNeXt-50-32x4d': update_params(
         large_basic_params,
-        layers=make_efficientnet_layers(1.0, 1.0),
-        stem_channels=32, head_channels=1280,
-        stem=MobileNetStem, head=MobileNetV2Head,
-        block=MobileNetBlock, operation=MobileNetOperation,
-        downsample=NoneDownsample, activation=Swish),
+        layers=make_resnet_layers([3, 4, 6, 3], 4, 32, 64),
+        stem_channels=64, head_channels=2048,
+        operation=BottleneckOperation),
 
-    'efficientnet-b1': update_params(
-        large_basic_params,
-        layers=make_efficientnet_layers(1.0, 1.1),
-        stem_channels=32, head_channels=1280,
-        stem=MobileNetStem, head=MobileNetV2Head,
-        block=MobileNetBlock, operation=MobileNetOperation,
-        downsample=NoneDownsample, activation=Swish),
-
-    'efficientnet-b2': update_params(
-        large_basic_params,
-        layers=make_efficientnet_layers(1.1, 1.2),
-        stem_channels=32, head_channels=1280,
-        stem=MobileNetStem, head=MobileNetV2Head,
-        block=MobileNetBlock, operation=MobileNetOperation,
-        downsample=NoneDownsample, activation=Swish),
-
-    'resnest-50': update_params(  # ResNeSt-50-2s1x64d
+    'ResNeSt-50-2s1x64d': update_params(
         large_basic_params,
         layers=make_resnest_layers([3, 4, 6, 3], 64, 2, 1, 4),
         stem_channels=64, head_channels=2048,
         stem=TweakedLargeStem, downsample=TweakedDownsample,
         operation=SplitAttentionOperation),
 
-    'densenet-121': update_params(
+    'MobileNetV2-1.0': update_params(
+        large_basic_params,
+        layers=make_mobilenetv2_layers(1.0),
+        stem_channels=32, head_channels=1280,
+        stem=MobileNetStem, head=MobileNetV2Head,
+        block=MobileNetBlock, operation=MobileNetOperation,
+        downsample=NoneDownsample, activation=nn.ReLU6,
+        seoperation=False, sesigmoid=None),
+
+    'MobileNetV2-0.5': update_params(
+        large_basic_params,
+        layers=make_mobilenetv2_layers(0.5),
+        stem_channels=16, head_channels=1280,
+        stem=MobileNetStem, head=MobileNetV2Head,
+        block=MobileNetBlock, operation=MobileNetOperation,
+        downsample=NoneDownsample, activation=nn.ReLU6,
+        seoperation=False, sesigmoid=None),
+
+    'MobileNetV3-large': update_params(
+        large_basic_params,
+        layers=make_mobilenetv3_large_layers(1.0),
+        stem_channels=16, head_channels=1280,
+        stem=MobileNetStem, head=MobileNetV3Head,
+        block=MobileNetBlock, operation=MobileNetOperation,
+        downsample=NoneDownsample, activation=HSwish,
+        seoperation=True, sesigmoid=lambda: HSigmoid(inplace=True)),
+
+    'EfficientNet-B0': update_params(
+        large_basic_params,
+        layers=make_efficientnet_layers(1.0, 1.0),
+        stem_channels=32, head_channels=1280,
+        stem=MobileNetStem, head=MobileNetV2Head,
+        block=MobileNetBlock, operation=MobileNetOperation,
+        downsample=NoneDownsample, activation=Swish,
+        seoperation=True, sesigmoid=nn.Sigmoid),
+
+    'EfficientNet-B1': update_params(
+        large_basic_params,
+        layers=make_efficientnet_layers(1.0, 1.1),
+        stem_channels=32, head_channels=1280,
+        stem=MobileNetStem, head=MobileNetV2Head,
+        block=MobileNetBlock, operation=MobileNetOperation,
+        downsample=NoneDownsample, activation=Swish,
+        seoperation=True, sesigmoid=nn.Sigmoid),
+
+    'EfficientNet-B2': update_params(
+        large_basic_params,
+        layers=make_efficientnet_layers(1.1, 1.2),
+        stem_channels=32, head_channels=1280,
+        stem=MobileNetStem, head=MobileNetV2Head,
+        block=MobileNetBlock, operation=MobileNetOperation,
+        downsample=NoneDownsample, activation=Swish,
+        seoperation=True, sesigmoid=nn.Sigmoid),
+
+    'DenseNet-121': update_params(
         large_basic_params,
         layers=make_densenet_layers([6, 12, 24, 16], 64, 32, 4),
         stem_channels=64, head_channels=1024,
         head=PreActHead, block=DenseNetBlock, operation=DenseNetOperation,
         downsample=NoneDownsample, junction=ConcatJunction),
 
-    'densenet-169': update_params(
+    'DenseNet-169': update_params(
         large_basic_params,
         layers=make_densenet_layers([6, 12, 32, 32], 64, 32, 4),
         stem_channels=64, head_channels=1664,
@@ -312,72 +357,122 @@ large_models = {
 small_basic_params = update_params(large_basic_params, stem=BasicSmallStem)
 
 small_models = {
-    'resnet-20': update_params(
+    'ResNet-20': update_params(
         small_basic_params,
         layers=make_resnet_layers([3, 3, 3], 16, 1, 1),
         stem_channels=16, head_channels=64),
 
-    'resnet-110': update_params(
+    'ResNet-110': update_params(
         small_basic_params,
         layers=make_resnet_layers([18, 18, 18], 16, 1, 1),
         stem_channels=16, head_channels=64),
 
-    'se-resnet-110': update_params(
+    'SE-ResNet-110': update_params(
         small_basic_params,
         layers=make_resnet_layers([18, 18, 18], 16, 1, 1),
         stem_channels=16, head_channels=64, semodule=True),
 
-    'wideresnet-28k10': update_params(
+    'SK-ResNetD-110': update_params(
+        small_basic_params,
+        layers=make_skresnet_layers([12, 12, 12], 16, 2, 1, 1),
+        stem_channels=16, head_channels=64,
+        operation=TweakedSlectedKernelOperation),
+
+    'WideResNet-28-k10': update_params(
         small_basic_params,
         layers=make_resnet_layers([4, 4, 4], 160, 1, 1),
         stem_channels=16, head_channels=640,
-        stem=PreActSmallStem, head=PreActHead, block=PreActBlock),
+        stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
+        operation=None),
 
-    'wideresnet-40k4': update_params(
+    'WideResNet-40-k4': update_params(
         small_basic_params,
         layers=make_resnet_layers([6, 6, 6], 64, 1, 1),
         stem_channels=16, head_channels=256,
-        stem=PreActSmallStem, head=PreActHead, block=PreActBlock),
+        stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
+        operation=None),
 
-    'pyramidnet-110a48': update_params(
+    'ResNeXt-29-8x64d': update_params(
+        small_basic_params,
+        layers=make_resnet_layers([3, 3, 3], 64, 8, 4),
+        stem_channels=64, head_channels=1024,
+        operation=BottleneckOperation),
+
+    'ResNeXt-47-32x4d': update_params(
+        small_basic_params,
+        layers=make_resnet_layers([5, 5, 5], 4, 32, 64),
+        stem_channels=16, head_channels=1024,
+        operation=BottleneckOperation),
+
+    'AFF-ResNeXt-47-32x4d': update_params(
+        small_basic_params,
+        layers=make_resnet_layers([5, 5, 5], 4, 32, 64),
+        stem_channels=16, head_channels=1024,
+        operation=BottleneckOperation, affmodule=True),
+
+    'ResNeSt-47-2s1x64d': update_params(
+        small_basic_params,
+        layers=make_resnest_layers([5, 5, 5], 64, 2, 1, 4),
+        stem_channels=16, head_channels=1024,
+        stem=TweakedLargeStem, downsample=TweakedDownsample,
+        operation=SplitAttentionOperation),
+
+    'ResNeSt-47-2s1x128d': update_params(
+        small_basic_params,
+        layers=make_resnest_layers([5, 5, 5], 128, 2, 1, 2),
+        stem_channels=16, head_channels=1024,
+        stem=TweakedLargeStem, downsample=TweakedDownsample,
+        operation=SplitAttentionOperation),
+
+    'PyramidNet-110-a48': update_params(
         small_basic_params,
         layers=make_pyramid_layers([18, 18, 18], 16, 48, 1, 1),
         stem_channels=16, head_channels=64,
         stem=PreActSmallStem, head=PreActHead,
-        block=PyramidActBlock, downsample=AverageDownsample),
+        block=PreActBlock, downsample=AverageDownsample,
+        operation=SingleActBasicOperation),
 
-    'pyramidnet-110a270': update_params(
+    'PyramidNet-110-a270': update_params(
         small_basic_params,
         layers=make_pyramid_layers([18, 18, 18], 16, 270, 1, 1),
         stem_channels=16, head_channels=286,
         stem=PreActSmallStem, head=PreActHead,
-        block=PyramidActBlock, downsample=AverageDownsample),
+        block=PreActBlock, downsample=AverageDownsample,
+        operation=SingleActBasicOperation),
 
-    'pyramidnet-200a240': update_params(
+    'PyramidNet-200-a240': update_params(
         small_basic_params,
         layers=make_pyramid_layers([22, 22, 22], 16, 240, 1, 4),
         stem_channels=16, head_channels=1024,
         stem=PreActSmallStem, head=PreActHead,
-        block=PyramidActBlock, downsample=AverageDownsample,
-        operation=BottleneckOperation),
+        block=PreActBlock, downsample=AverageDownsample,
+        operation=SingleActBottleneckOperation),
+
+    'PyramidNet-272-a200': update_params(
+        small_basic_params,
+        layers=make_pyramid_layers([30, 30, 30], 16, 200, 1, 4),
+        stem_channels=16, head_channels=864,
+        stem=PreActSmallStem, head=PreActHead,
+        block=PreActBlock, downsample=AverageDownsample,
+        operation=SingleActBottleneckOperation),
 }
 
 size256_models = {}
 size256_models.update(large_models)
-size256_models.update(resnetd_models(size256_models))
 size256_models.update(dense_models(size256_models))
+size256_models.update(skip_models(size256_models))
 
 size64_models = {}
 size64_models.update(update_models(
     {n: m for n, m in large_models.items() if m['stem'] == BasicLargeStem},
     stem=BasicSmallStem))
-size64_models.update(resnetd_models(size64_models))
 size64_models.update(dense_models(size64_models))
+size64_models.update(skip_models(size64_models))
 
 size32_models = {}
 size32_models.update(small_models)
-size32_models.update(resnetd_models(size32_models))
 size32_models.update(dense_models(size32_models))
+size32_models.update(skip_models(size32_models))
 
 PARAMETERS = {
     'imagenet': update_models(size256_models, num_classes=1000),

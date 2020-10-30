@@ -1,53 +1,62 @@
+from .modules import ChannelPad, DropBlock
 import torch.nn as nn
 
 
 class NoneDownsample(nn.Identity):
 
-    def __init__(self, in_channels, out_channels, stride, normalization, **kwargs):
+    def __init__(self, in_channels, out_channels, stride,
+                 normalization, activation, dropblock, ** kwargs):
         super().__init__()
-        self.out_channels = in_channels
 
 
 class BasicDownsample(nn.Sequential):
 
-    def __init__(self, in_channels, out_channels, stride, normalization, **kwargs):
+    def __init__(self, in_channels, out_channels, stride,
+                 normalization, activation, dropblock, **kwargs):
         if stride != 1 or in_channels != out_channels:
             super().__init__(
                 nn.Conv2d(
                     in_channels, out_channels, kernel_size=1,
                     stride=stride, padding=0, bias=False),
-                normalization(out_channels))
+                normalization(out_channels),
+                DropBlock() if dropblock else nn.Identity())
         else:
             super().__init__()
-
-        self.out_channels = out_channels
 
 
 class TweakedDownsample(nn.Sequential):
 
-    def __init__(self, in_channels, out_channels, stride, normalization, **kwargs):
+    def __init__(self, in_channels, out_channels, stride,
+                 normalization, activation, dropblock, **kwargs):
         modules = []
 
         if stride != 1:
-            modules.append(nn.AvgPool2d(kernel_size=2, stride=stride))
+            modules.append(nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True))
 
         if in_channels != out_channels:
-            modules.append(
+            modules.extend([
                 nn.Conv2d(
                     in_channels, out_channels, kernel_size=1,
-                    stride=1, padding=0, bias=False))
-            modules.append(normalization(out_channels))
+                    stride=1, padding=0, bias=False),
+                normalization(out_channels),
+                DropBlock() if dropblock else nn.Identity()])
 
         super().__init__(*modules)
-        self.out_channels = out_channels
 
 
 class AverageDownsample(nn.Sequential):
 
-    def __init__(self, in_channels, out_channels, stride, normalization, **kwargs):
-        if stride != 1:
-            super().__init__(nn.AvgPool2d(kernel_size=2, stride=stride))
-        else:
-            super().__init__()
+    def __init__(self, in_channels, out_channels, stride,
+                 normalization, activation, dropblock, **kwargs):
+        modules = []
 
-        self.out_channels = in_channels
+        if stride != 1:
+            modules.append(nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True))
+
+        if in_channels != out_channels:
+            modules.append(ChannelPad(out_channels - in_channels))
+
+        if len(modules) != 0:
+            modules.append(DropBlock() if dropblock else nn.Identity())
+
+        super().__init__(*modules)

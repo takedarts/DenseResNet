@@ -4,10 +4,9 @@ import math
 
 class SEModule(nn.Module):
 
-    def __init__(self, channels, reduction, activation, sigmoid=nn.Sigmoid):
+    def __init__(self, channels, reduction, activation=nn.ReLU, sigmoid=nn.Sigmoid):
         super().__init__()
-        hidden_channels = max(channels // reduction, 1)
-        hidden_channels = math.ceil(hidden_channels / 8) * 8
+        hidden_channels = math.ceil(max(channels // reduction, 1) / 8) * 8
 
         self.op = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),

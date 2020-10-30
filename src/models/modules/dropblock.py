@@ -18,7 +18,7 @@ class DropBlock(nn.Module):
             return x
 
         gamma = self.drop_prob / (self.block_size ** 2)
-        mask = torch.rand(x.shape[0], 1, x.shape[2], x.shape[3], device=x.device)  # @UndefinedVariable
+        mask = torch.rand(x.shape[0], 1, x.shape[2], x.shape[3], device=x.device)
         mask = (mask < gamma).float()
         mask = nn.functional.max_pool2d(
             mask, kernel_size=self.block_size, stride=1, padding=self.block_size // 2)
