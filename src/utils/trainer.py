@@ -88,7 +88,7 @@ class Trainer(object):
         self._accuracy_count += preds.shape[0]
 
     def train(self, loader, label_smooth=0,
-              cutmix_prob=0, cutmix_beta=1, mixup_prob=0, mixup_beta=1):
+              cutmix_prob=0, cutmix_alpha=1, mixup_prob=0, mixup_alpha=1):
         self.reset()
         self.model.train()
 
@@ -101,11 +101,11 @@ class Trainer(object):
                 targets *= 1 - label_smooth
                 targets += label_smooth / targets.shape[1]
 
-            if cutmix_prob != 0 and cutmix_beta != 0:
-                images, targets = cutmix(images, targets, cutmix_prob, cutmix_beta)
+            if cutmix_prob != 0 and cutmix_alpha != 0:
+                images, targets = cutmix(images, targets, cutmix_prob, cutmix_alpha)
 
-            if mixup_prob != 0 and mixup_beta != 0:
-                images, targets = mixup(images, targets, mixup_prob, mixup_beta)
+            if mixup_prob != 0 and mixup_alpha != 0:
+                images, targets = mixup(images, targets, mixup_prob, mixup_alpha)
 
             if LOGGER.isEnabledFor(logging.DEBUG):
                 with autograd.detect_anomaly():

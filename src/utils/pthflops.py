@@ -1,5 +1,5 @@
 # This code is 'pytorch-estimate-flops' imported from
-#   https://github.com/1adrianb/pytorch-estimate-flops.
+#   https://github.com/1adrianb/pytorch-estimate-flops
 # This is published under BSD 3-Clause License (2020/08/25).
 import re
 from functools import reduce
@@ -242,7 +242,7 @@ def count_ops(model, input, custom_ops={}, ignore_layers=[], print_readable=True
         trace, _ = torch.jit.get_trace_graph(model, input, *args)
         torch.onnx._optimize_trace(trace, torch.onnx.OperatorExportTypes.ONNX)
         graph = trace.graph()
-    except:
+    except BaseException:
         trace, _ = torch.jit._get_trace_graph(model, input, *args)
         graph = torch.onnx._optimize_trace(trace, torch.onnx.OperatorExportTypes.ONNX)
 
@@ -270,4 +270,3 @@ def count_ops(model, input, custom_ops={}, ignore_layers=[], print_readable=True
         model.train()
 
     return ops, all_data
-

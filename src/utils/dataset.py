@@ -8,17 +8,24 @@ import os
 from .autoaug import ImageNetPolicy, CIFAR10Policy
 
 
-def load_dataset(dataset_name, data_dir, crop_size, train, stdaug, autoaug):
+def load_dataset(dataset_name, data_dir, crop_size, train, stdaug,
+                 autoaugment=False, random_erasing_prob=0.0, random_erasing_type='random'):
     if dataset_name == 'imagenet':
         return ImagenetDataset(
-            os.path.join(data_dir, 'imagenet'), 1000, crop_size, train, stdaug, autoaug)
+            os.path.join(data_dir, 'imagenet'), 1000, crop_size,
+            train, stdaug, autoaugment, random_erasing_prob, random_erasing_type)
     elif dataset_name == 'tinyimagenet':
         return TinyImagenetDataset(
-            os.path.join(data_dir, 'tinyimagenet'), 200, crop_size, train, stdaug, autoaug)
+            os.path.join(data_dir, 'tinyimagenet'), 200, crop_size,
+            train, stdaug, autoaugment, random_erasing_prob, random_erasing_type)
     elif dataset_name == 'cifar10':
-        return Cifar10Dataset(os.path.join(data_dir, 'cifar'), train, stdaug, autoaug)
+        return Cifar10Dataset(
+            os.path.join(data_dir, 'cifar'),
+            train, stdaug, autoaugment, random_erasing_prob, random_erasing_type)
     elif dataset_name == 'cifar100':
-        return Cifar100Dataset(os.path.join(data_dir, 'cifar'), train, stdaug, autoaug)
+        return Cifar100Dataset(
+            os.path.join(data_dir, 'cifar'),
+            train, stdaug, autoaugment, random_erasing_prob, random_erasing_type)
     else:
         raise Exception(f'unsuppoted dataset: {dataset_name}')
 
@@ -54,7 +61,8 @@ class ImagenetDataset(torchvision.datasets.ImageFolder):
             [-0.5836, -0.6948, 0.4203]]
     }
 
-    def __init__(self, path, num_classes, crop_size, train, stdaug, autoaug):
+    def __init__(self, path, num_classes, crop_size, train, stdaug,
+                 autoaugment, random_erasing_prob, random_erasing_type):
         if train:
             path = os.path.join(path, 'train')
         else:
@@ -76,8 +84,13 @@ class ImagenetDataset(torchvision.datasets.ImageFolder):
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(mean=self.MEAN, std=self.STD)]
 
-        if stdaug and autoaug:
+        if stdaug and autoaugment:
             transforms.insert(2, ImageNetPolicy())
+
+        if random_erasing_prob != 0:
+            value = 0 if random_erasing_type == 'zero' else 'random'
+            transforms.append(torchvision.transforms.RandomErasing(
+                p=random_erasing_prob, value=value))
 
         super().__init__(path, torchvision.transforms.Compose(transforms))
         self.num_classes = num_classes
@@ -94,7 +107,8 @@ class TinyImagenetDataset(torchvision.datasets.ImageFolder):
     MEAN = [0.4802, 0.4481, 0.3975]
     STD = [0.2770, 0.2691, 0.2821]
 
-    def __init__(self, path, num_classes, crop_size, train, stdaug, autoaug):
+    def __init__(self, path, num_classes, crop_size, train, stdaug,
+                 autoaugment, random_erasing_prob, random_erasing_type):
         if train:
             path = os.path.join(path, 'train')
         else:
@@ -113,8 +127,13 @@ class TinyImagenetDataset(torchvision.datasets.ImageFolder):
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(mean=self.MEAN, std=self.STD)]
 
-        if stdaug and autoaug:
+        if stdaug and autoaugment:
             transforms.insert(2, ImageNetPolicy())
+
+        if random_erasing_prob != 0:
+            value = 0 if random_erasing_type == 'zero' else 'random'
+            transforms.append(torchvision.transforms.RandomErasing(
+                p=random_erasing_prob, value=value))
 
         super().__init__(path, torchvision.transforms.Compose(transforms))
         self.num_classes = num_classes
@@ -129,7 +148,8 @@ class TinyImagenetDataset(torchvision.datasets.ImageFolder):
 
 class CifarDataset(torch.utils.data.Dataset):
 
-    def __init__(self, dataset, num_classes, mean, std, stdaug, autoaug):
+    def __init__(self, dataset, num_classes, mean, std, stdaug,
+                 autoaugment, random_erasing_prob, random_erasing_type):
         super().__init__()
         if stdaug:
             transforms = [
@@ -142,8 +162,13 @@ class CifarDataset(torch.utils.data.Dataset):
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(mean=mean, std=std)]
 
-        if stdaug and autoaug:
+        if stdaug and autoaugment:
             transforms.insert(2, CIFAR10Policy())
+
+        if random_erasing_prob != 0:
+            value = 0 if random_erasing_type == 'zero' else 'random'
+            transforms.append(torchvision.transforms.RandomErasing(
+                p=random_erasing_prob, value=value))
 
         self.transforms = torchvision.transforms.Compose(transforms)
         self.dataset = dataset
@@ -165,17 +190,19 @@ class Cifar10Dataset(CifarDataset):
     MEAN = [0.4914, 0.4822, 0.4465]
     STD = [0.2470, 0.2435, 0.2616]
 
-    def __init__(self, path, train, stdaug, autoaug):
+    def __init__(self, path, train, stdaug, autoaugment, random_erasing_prob, random_erasing_type):
         super().__init__(
             torchvision.datasets.CIFAR10(path, download=True, train=train), num_classes=10,
-            mean=self.MEAN, std=self.STD, stdaug=stdaug, autoaug=autoaug)
+            mean=self.MEAN, std=self.STD, stdaug=stdaug, autoaugment=autoaugment,
+            random_erasing_prob=random_erasing_prob, random_erasing_type=random_erasing_type)
 
 
 class Cifar100Dataset(CifarDataset):
     MEAN = [0.5071, 0.4865, 0.4409]
     STD = [0.2673, 0.2564, 0.2762]
 
-    def __init__(self, path, train, stdaug, autoaug):
+    def __init__(self, path, train, stdaug, autoaugment, random_erasing_prob, random_erasing_type):
         super().__init__(
             torchvision.datasets.CIFAR100(path, download=True, train=train), num_classes=100,
-            mean=self.MEAN, std=self.STD, stdaug=stdaug, autoaug=autoaug)
+            mean=self.MEAN, std=self.STD, stdaug=stdaug, autoaugment=autoaugment,
+            random_erasing_prob=random_erasing_prob, random_erasing_type=random_erasing_type)

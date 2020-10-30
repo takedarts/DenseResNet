@@ -18,12 +18,12 @@ def rand_bbox(width, height, lam):
     return bbx1, bby1, bbx2, bby2
 
 
-def cutmix(images, targets, prob, beta=1.0):
+def cutmix(images, targets, prob, alpha=1.0):
     if numpy.random.rand() >= prob:
         return images, targets
 
-    lam = numpy.random.beta(beta, beta)
-    rand_index = torch.randperm(images.shape[0], device=images.device)  # @UndefinedVariable
+    lam = numpy.random.beta(alpha, alpha)
+    rand_index = torch.randperm(images.shape[0], device=images.device)
 
     # generate mixed images
     bbx1, bby1, bbx2, bby2 = rand_bbox(images.shape[3], images.shape[2], lam)

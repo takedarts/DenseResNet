@@ -23,7 +23,7 @@ parser.add_argument('--debug', action='store_true', default=False, help='Debug m
 def count_python_op(node):
     if node.pyname() == 'AdjustedStackFunction':
         return 0
-    elif node.pyname() == 'GatedFunction':
+    elif node.pyname() == 'GateFunction':
         inputs = list(node.inputs())
 
         size = utils.pthflops.string_to_shape(inputs[-1])
@@ -73,7 +73,7 @@ def count_mean(node):
         return 0
 
 
-def zero_op(node):  # @UnusedVariable
+def zero_op(node):
     return 0
 
 
@@ -105,10 +105,7 @@ def main():
     params = snapshot['params']
 
     # model
-    models.CONFIG.semodule_reduction = params.semodule_reduction
-    models.CONFIG.gate_reduction = params.gate_reduction
-    models.CONFIG.gate_connections = params.gate_connections
-
+    models.CONFIG.load(params)
     model = models.create_model(
         params.dataset, params.model,
         shakedrop=params.shakedrop_prob)
@@ -117,10 +114,10 @@ def main():
 
     # flops
     image = utils.load_dataset(
-        params.dataset, DATA_DIR, params.valid_crop,
-        train=False, stdaug=False, autoaug=False)[0][0].unsqueeze(0)
+        params.dataset, DATA_DIR, params.valid_crop, train=False, stdaug=False)[0][0]
     flops, groups = utils.pthflops.count_ops(
-        model, image, custom_ops=custom_ops, verbose=args.debug, print_readable=False)
+        model, image.unsqueeze(0),
+        custom_ops=custom_ops, verbose=args.debug, print_readable=False)
 
     for name, value in groups:
         print(f'{value:8d} - {name}')

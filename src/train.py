@@ -21,12 +21,12 @@ parser.add_argument('--gpu', type=lambda x: list(map(int, x.split(','))), defaul
 parser.add_argument('--debug', action='store_true', default=False, help='Debug mode.')
 
 
-def update_dropblock(module, prob):
+def update_dropblock(module, drop_prob):
     if isinstance(module, models.modules.DropBlock):
-        module.drop_prob = prob
+        module.drop_prob = drop_prob
     else:
         for child in module.children():
-            update_dropblock(child, prob)
+            update_dropblock(child, drop_prob)
 
 
 def main():
@@ -43,9 +43,7 @@ def main():
 
     # settings
     utils.random_seed(params.seed)
-    models.CONFIG.semodule_reduction = params.semodule_reduction
-    models.CONFIG.gate_reduction = params.gate_reduction
-    models.CONFIG.gate_connections = params.gate_connections
+    models.CONFIG.load(params)
 
     if torch.cuda.device_count() != 0:
         torch.torch.backends.cudnn.benchmark = True
@@ -54,9 +52,9 @@ def main():
     # model
     model = models.create_model(
         params.dataset, params.model,
-        dropout=params.dropblock_prob,
+        dropout=params.dropout_prob,
         shakedrop=params.shakedrop_prob,
-        sigaug=params.signal_augment)
+        signalaugment=params.signalaugment)
     model.load_state_dict(snapshot['model'])
 
     LOGGER.debug(model)
@@ -73,17 +71,17 @@ def main():
 
     # dataset
     train_dataset = utils.load_dataset(
-        params.dataset, DATA_DIR, params.train_crop,
-        train=True, stdaug=True, autoaug=params.auto_augment)
+        params.dataset, DATA_DIR, params.train_crop, train=True, stdaug=True,
+        autoaugment=params.autoaugment,
+        random_erasing_prob=params.randomerasing_prob,
+        random_erasing_type=params.randomerasing_type)
     valid_dataset = utils.load_dataset(
-        params.dataset, DATA_DIR, params.valid_crop,
-        train=False, stdaug=False, autoaug=False)
+        params.dataset, DATA_DIR, params.valid_crop, train=False, stdaug=False)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=params.train_batch,
         shuffle=True, pin_memory=False, num_workers=args.workers,
         worker_init_fn=lambda x: utils.random_seed(params.seed + x))
-
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset, batch_size=params.train_batch,
         shuffle=False, pin_memory=False, num_workers=args.workers)
@@ -106,9 +104,9 @@ def main():
 
         # train-train
         trainer.train(
-            train_loader, label_smooth=params.label_smooth,
-            cutmix_prob=params.cutmix_prob, cutmix_beta=params.cutmix_beta,
-            mixup_prob=params.mixup_prob, mixup_beta=params.mixup_beta)
+            train_loader, label_smooth=params.labelsmooth,
+            cutmix_prob=params.cutmix_prob, cutmix_alpha=params.cutmix_alpha,
+            mixup_prob=params.mixup_prob, mixup_alpha=params.mixup_alpha)
         log.update({f'train-{k}': v for k, v in trainer.get_status().items()})
         LOGGER.info('train: %s', trainer)
 

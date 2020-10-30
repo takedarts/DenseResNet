@@ -17,6 +17,12 @@ parser.add_argument('model', type=str, help='Model name.')
 parser.add_argument('--config', type=str, default=None, help='Configuration file.')
 
 for name, value, desc in utils.OPTIONS:
+    if hasattr(value, '__getitem__'):
+        choices = value
+        value = value[0]
+    else:
+        choices = None
+
     kwargs = {
         'default': value,
         'help': f'{desc} (default:{value})'}
@@ -29,6 +35,9 @@ for name, value, desc in utils.OPTIONS:
         kwargs['type'] = float
     else:
         kwargs['type'] = str
+
+    if choices is not None:
+        kwargs['choices'] = choices
 
     parser.add_argument(f'--{name}', **kwargs)
 
@@ -50,17 +59,14 @@ def main():
 
     # settings
     utils.random_seed(args.seed)
-    models.CONFIG.semodule_reduction = args.semodule_reduction
-    models.CONFIG.gate_reduction = args.gate_reduction
-    models.CONFIG.gate_connections = args.gate_connections
-    models.CONFIG.dropblock_size = args.dropblock_size
+    models.CONFIG.load(args)
 
     # model
     model = models.create_model(
         args.dataset, args.model,
-        dropout=args.dropblock_prob,
+        dropout=args.dropout_prob,
         shakedrop=args.shakedrop_prob,
-        sigaug=args.signal_augment)
+        signalaugment=args.signalaugment)
 
     LOGGER.debug(model)
     LOGGER.info('number of parameters={:,d}'.format(

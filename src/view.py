@@ -23,10 +23,12 @@ def main():
     params = snapshot['params']
 
     # view model
-    models.CONFIG.semodule_reduction = params.semodule_reduction
-    models.CONFIG.gate_reduction = params.gate_reduction
-    models.CONFIG.gate_connections = params.gate_connections
-    model = models.create_model(params.dataset, params.model)
+    models.CONFIG.load(params)
+    model = models.create_model(
+        params.dataset, params.model,
+        dropout=params.dropblock_prob,
+        shakedrop=params.shakedrop_prob,
+        sigaug=params.signalaugment)
 
     print('[model]')
 
