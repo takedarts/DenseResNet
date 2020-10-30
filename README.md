@@ -1,18 +1,22 @@
-# What is DenseResNet ?
+# What is Skip-ResNet ?
 
 [<img alt="Architecture of DenseResNets" src="res/architecture.png" width="250px" align="right">](res/architecture.png)
 
-DenseResNet is a Densely connected Residual convolutional neural Network for image recognition tasks.
-Though an architecture of DenseResNets is a stack of Residual Blocks just like ResNets, the circuit design is similar to DenseNets.
-In order to improve the performance, DenseResNets use Gate Modules instead of elemet-wise additions or concatenations.
-Gate Modules contain attention mechanisms which select useful features dynamically.
-Experiental results show that DenseResNets achieve higher performance than conventional ResNets in image classification tasks.
+Skip-ResNet is a Skip connected Residual convolutional neural Network for image recognition tasks.
+Though an architecture of Skip-ResNets is a stack of Residual Blocks just like ResNets, each residual block has several inbounds from the previous blocks in same manner as DenseNets.
+In order to improve the performance, a residual block in Skip-ResNets includes a Gate Module instead of elemet-wise additions in ResNets or concatenations in DenseNets.
+A Gate Module contains an attention mechanism which selects useful features dynamically.
+Experimental results show that an architecture of Skip-ResNets improves the performance in image classification tasks.
 
-［NOTE］This implementation concains some unefficient codes because the purpuse is performance evalutation of DenseResNets.
+# What is Dense-ResNet ?
+
+Dense-ResNet is a Densely connected Residual convolutional neural Network for image recognition tasks.
+An architecture of Dense-ResNets is similar to Skip-ResNets, but the shortcut design is different.
+
 <div class="clearfix"></div>
 
 DenseResNets are published in a following paper:
-1. Atsushi Takeda. "Dense Residual Networks for Image Classification." The 23rd Meeting on Image Recognition and Understanding (MIRU2020), 2020 (in Japanese).
+1. Atsushi Takeda. "画像分類のためのDense Residual Networkの提案 (Dense Residual Networks for Image Classification)." The 23rd Meeting on Image Recognition and Understanding (MIRU2020), 2020 (in Japanese).
 
 # How to use
 ## Dataset preparation
