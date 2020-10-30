@@ -64,7 +64,7 @@ DenseResNets are published in a following paper:
     ```
     For example, a following command creates a model file of ResNet-110 for CIFAR-100.
     ```
-    % python src/create.py model.pth cifar100 resnet-110 --config config/cifar/resnet-110.txt
+    % python src/create.py model.pth cifar100 ResNet-110 --config config/cifar/ResNet-110.txt
     ```
 2. Train the model.
     A following command trains the model.
