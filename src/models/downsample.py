@@ -56,7 +56,4 @@ class AverageDownsample(nn.Sequential):
         if in_channels != out_channels:
             modules.append(ChannelPad(out_channels - in_channels))
 
-        if len(modules) != 0:
-            modules.append(DropBlock() if dropblock else nn.Identity())
-
         super().__init__(*modules)
