@@ -372,12 +372,6 @@ small_models = {
         layers=make_resnet_layers([18, 18, 18], 16, 1, 1),
         stem_channels=16, head_channels=64, semodule=True),
 
-    'SK-ResNetD-110': update_params(
-        small_basic_params,
-        layers=make_skresnet_layers([12, 12, 12], 16, 2, 1, 1),
-        stem_channels=16, head_channels=64,
-        operation=TweakedSlectedKernelOperation),
-
     'WideResNet-28-k10': update_params(
         small_basic_params,
         layers=make_resnet_layers([4, 4, 4], 160, 1, 1),
