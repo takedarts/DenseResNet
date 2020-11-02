@@ -2,7 +2,7 @@ class Config(object):
 
     def __init__(self):
         self.semodule_reduction = 16
-        self.affmodule_reduction = 16
+        self.affmodule_reduction = 4
         self.gate_reduction = 8
         self.dense_connections = 4
         self.skip_connections = 4
