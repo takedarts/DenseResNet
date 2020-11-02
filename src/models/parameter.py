@@ -4,6 +4,7 @@ from .head import BasicHead, PreActHead, MobileNetV2Head, MobileNetV3Head
 from .classifier import BasicClassifier
 from .block import BasicBlock, PreActBlock, MobileNetBlock, DenseNetBlock
 from .operation import BasicOperation, BottleneckOperation, SelectedKernelOperation
+from .operation import PreActBasicOperation
 from .operation import SingleActBasicOperation, SingleActBottleneckOperation
 from .operation import TweakedBottleneckOperation, TweakedSlectedKernelOperation
 from .operation import MobileNetOperation, SplitAttentionOperation, DenseNetOperation
