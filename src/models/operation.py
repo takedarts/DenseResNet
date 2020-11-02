@@ -74,6 +74,27 @@ class SelectedKernelOperation(nn.Sequential):
             DropBlock() if dropblock else nn.Identity())
 
 
+class PreActBasicOperation(nn.Sequential):
+
+    def __init__(self, in_channels, out_channels, stride, groups, bottleneck,
+                 normalization, activation, dropblock, **kwargs):
+        channels = round(out_channels / bottleneck)
+
+        super().__init__(
+            normalization(in_channels),
+            DropBlock() if dropblock else nn.Identity(),
+            activation(inplace=True),
+            nn.Conv2d(
+                in_channels, channels, kernel_size=3, padding=1,
+                stride=stride, groups=groups, bias=False),
+            normalization(channels),
+            DropBlock() if dropblock else nn.Identity(),
+            activation(inplace=True),
+            nn.Conv2d(
+                channels, out_channels, kernel_size=3, padding=1,
+                stride=1, groups=1, bias=False))
+
+
 class SingleActBasicOperation(nn.Sequential):
 
     def __init__(self, in_channels, out_channels, stride, groups, bottleneck,
