@@ -28,11 +28,6 @@ class Model(nn.Module):
         self.dropout = nn.Dropout(p=dropout, inplace=True)
         self.classifier = classifier(head_channels, **kwargs)
 
-        # initialize
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-
     def get_features(self, x):
         x = [self.stem(x)]
         f = []
