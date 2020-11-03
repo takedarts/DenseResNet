@@ -380,14 +380,14 @@ small_models = {
         stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
         operation=PreActBasicOperation),
 
-    'WideResNet-32-k4': update_params(
+    'WideResNet-34-k4': update_params(
         small_basic_params,
         layers=make_resnet_layers([5, 5, 5], 64, 1, 1),
         stem_channels=16, head_channels=256,
         stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
         operation=PreActBasicOperation),
 
-    'AFF-WideResNet-32-k4': update_params(
+    'AFF-WideResNet-34-k4': update_params(
         small_basic_params,
         layers=make_resnet_layers([5, 5, 5], 64, 1, 1),
         stem_channels=16, head_channels=256,
