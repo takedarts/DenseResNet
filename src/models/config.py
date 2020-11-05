@@ -2,7 +2,6 @@ class Config(object):
 
     def __init__(self):
         self.semodule_reduction = 16
-        self.affmodule_reduction = 4
         self.gate_reduction = 8
         self.dense_connections = 4
         self.skip_connections = 4
@@ -11,7 +10,6 @@ class Config(object):
 
     def load(self, params):
         self.semodule_reduction = params.semodule_reduction
-        self.affmodule_reduction = params.affmodule_reduction
         self.gate_reduction = params.gate_reduction
         self.dense_connections = params.dense_connections
         self.skip_connections = params.skip_connections

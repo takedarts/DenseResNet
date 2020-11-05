@@ -26,7 +26,6 @@ OPTIONS = [
     ('stochdepth-prob', 0.0, 'Drop probability of stochastic depth.'),
     ('signalaugment', 0.0, 'Standard deviation of signal augmentation.'),
     ('semodule-reduction', 16, 'Reduction ratio of "Squeeze and Excitation" modules.'),
-    ('affmodule-reduction', 4, 'Reduction ratio of "Attentional Feature Fusion" modules.'),
     ('gate-reduction', 8, 'reduction rate of gate modules in DenseResNets or SkipResNets.'),
     ('dense-connections', 4, 'number of connections of gate modules in DenseResNets.'),
     ('skip-connections', 16, 'number of connections of gate modules in SkipResNets.'),

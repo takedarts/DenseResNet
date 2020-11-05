@@ -63,7 +63,6 @@ def create_model(dataset_name, model_name, **kwargs):
         'normalization': nn.BatchNorm2d,
         'activation': nn.ReLU,
         'semodule': False,
-        'affmodule': False,
         'dropout': 0.0,
         'shakedrop': 0.0,
         'stochdepth': 0.0,

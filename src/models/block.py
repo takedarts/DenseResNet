@@ -1,6 +1,6 @@
 import torch.nn as nn
 from .config import CONFIG
-from .modules import ShakeDrop, SignalAugmentation, SEModule, AFFModule, StochasticDepth
+from .modules import ShakeDrop, SignalAugmentation, SEModule, StochasticDepth
 from .downsample import NoneDownsample
 from .junction import NoneJunction
 
@@ -8,7 +8,7 @@ from .junction import NoneJunction
 class _Block(nn.Module):
 
     def __init__(self, index, settings, operation, downsample, junction, subsequent,
-                 normalization, activation, semodule, affmodule, dropblock,
+                 normalization, activation, semodule, dropblock,
                  shakedrop, stochdepth, signalaugment, **kwargs):
         super().__init__()
         in_channels, out_channels, stride = settings[index]
@@ -29,11 +29,6 @@ class _Block(nn.Module):
         if semodule:
             self.semodule = SEModule(
                 out_channels, CONFIG.semodule_reduction, activation=activation)
-
-        if affmodule:
-            self.affmodule = AFFModule(
-                out_channels, CONFIG.affmodule_reduction,
-                normalization=normalization, activation=activation)
 
         # noise
         self.noise = nn.Sequential(
@@ -56,9 +51,6 @@ class _Block(nn.Module):
         # attention
         if hasattr(self, 'semodule'):
             y = self.semodule(y)
-
-        if hasattr(self, 'affmodule'):
-            y, z = self.affmodule(y, z)
 
         # noise
         y = self.noise(y)

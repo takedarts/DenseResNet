@@ -380,20 +380,12 @@ small_models = {
         stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
         operation=PreActBasicOperation),
 
-    'WideResNet-34-k4': update_params(
+    'WideResNet-40-k4': update_params(
         small_basic_params,
-        layers=make_resnet_layers([5, 5, 5], 64, 1, 1),
+        layers=make_resnet_layers([6, 6, 6], 64, 1, 1),
         stem_channels=16, head_channels=256,
         stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
         operation=PreActBasicOperation),
-
-    'AFF-WideResNet-34-k4': update_params(
-        small_basic_params,
-        layers=make_resnet_layers([5, 5, 5], 64, 1, 1),
-        stem_channels=16, head_channels=256,
-        stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
-        downsample=TweakedDownsample, operation=PreActBasicOperation,
-        affmodule=True),
 
     'ResNeXt-29-8x64d': update_params(
         small_basic_params,
@@ -406,12 +398,6 @@ small_models = {
         layers=make_resnet_layers([5, 5, 5], 4, 32, 64),
         stem_channels=16, head_channels=1024,
         operation=BottleneckOperation),
-
-    'AFF-ResNeXt-47-32x4d': update_params(
-        small_basic_params,
-        layers=make_resnet_layers([5, 5, 5], 4, 32, 64),
-        stem_channels=16, head_channels=1024,
-        operation=BottleneckOperation, affmodule=True),
 
     'ResNeSt-47-2s1x64d': update_params(
         small_basic_params,

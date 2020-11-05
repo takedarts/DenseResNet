@@ -1,4 +1,3 @@
-from .affmodule import AFFModule
 from .blurpool import BlurPool2d
 from .dropblock import DropBlock
 from .reshape import ChannelPad, Reshape
