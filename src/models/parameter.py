@@ -387,6 +387,13 @@ small_models = {
         stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
         operation=PreActBasicOperation),
 
+    'WideResNet-40-k10': update_params(
+        small_basic_params,
+        layers=make_resnet_layers([6, 6, 6], 160, 1, 1),
+        stem_channels=16, head_channels=640,
+        stem=PreActSmallStem, head=PreActHead, block=PreActBlock,
+        operation=PreActBasicOperation),
+
     'ResNeXt-29-8x64d': update_params(
         small_basic_params,
         layers=make_resnet_layers([3, 3, 3], 64, 8, 4),
