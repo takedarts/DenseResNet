@@ -2,6 +2,20 @@ from .parameter import PARAMETERS
 import torch.nn as nn
 import itertools
 
+CONV_CLASSES = [
+    nn.Conv1d,
+    nn.Conv2d,
+    nn.Conv3d,
+]
+
+
+def _is_conv_instance(obj):
+    for cls in CONV_CLASSES:
+        if isinstance(obj, cls):
+            return True
+
+    return False
+
 
 class Model(nn.Module):
 
@@ -27,6 +41,11 @@ class Model(nn.Module):
         self.head = head(channels[-1], head_channels, **kwargs)
         self.dropout = nn.Dropout(p=dropout, inplace=True)
         self.classifier = classifier(head_channels, **kwargs)
+
+        # initialize weights
+        for m in self.modules():
+            if _is_conv_instance(m):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
     def get_features(self, x):
         x = [self.stem(x)]
