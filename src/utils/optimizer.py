@@ -5,6 +5,8 @@ NORM_CLASSES = set([
     nn.BatchNorm1d,
     nn.BatchNorm2d,
     nn.BatchNorm3d,
+    nn.GroupNorm,
+    nn.LayerNorm,
 ])
 
 CONV_CLASSES = set([
