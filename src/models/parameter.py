@@ -403,15 +403,13 @@ small_models = {
         small_basic_params,
         layers=make_resnest_layers([5, 5, 5], 64, 2, 1, 4),
         stem_channels=16, head_channels=1024,
-        stem=TweakedLargeStem, downsample=TweakedDownsample,
-        operation=SplitAttentionOperation),
+        downsample=TweakedDownsample, operation=SplitAttentionOperation),
 
     'ResNeSt-47-2s1x128d': update_params(
         small_basic_params,
         layers=make_resnest_layers([5, 5, 5], 128, 2, 1, 2),
         stem_channels=16, head_channels=1024,
-        stem=TweakedLargeStem, downsample=TweakedDownsample,
-        operation=SplitAttentionOperation),
+        downsample=TweakedDownsample, operation=SplitAttentionOperation),
 
     'PyramidNet-110-a48': update_params(
         small_basic_params,
