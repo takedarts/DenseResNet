@@ -166,7 +166,7 @@ class TweakedBottleneckOperation(nn.Sequential):
             nn.Conv2d(
                 channels, out_channels, kernel_size=1, padding=0,
                 stride=1, groups=1, bias=False),
-            normalization(channels),
+            normalization(out_channels),
             DropBlock() if dropblock else nn.Identity())
 
 
