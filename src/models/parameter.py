@@ -456,13 +456,6 @@ size256_models.update(large_models)
 size256_models.update(dense_models(size256_models))
 size256_models.update(skip_models(size256_models))
 
-size64_models = {}
-size64_models.update(update_models(
-    {n: m for n, m in large_models.items() if m['stem'] == BasicLargeStem},
-    stem=BasicSmallStem))
-size64_models.update(dense_models(size64_models))
-size64_models.update(skip_models(size64_models))
-
 size32_models = {}
 size32_models.update(small_models)
 size32_models.update(dense_models(size32_models))
@@ -470,7 +463,6 @@ size32_models.update(skip_models(size32_models))
 
 PARAMETERS = {
     'imagenet': update_models(size256_models, num_classes=1000),
-    'tinyimagenet': update_models(size64_models, num_classes=200),
     'cifar100': update_models(size32_models, num_classes=100),
     'cifar10': update_models(size32_models, num_classes=10),
 }
