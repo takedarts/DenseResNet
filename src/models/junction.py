@@ -4,7 +4,7 @@ from .modules import Reshape
 import torch
 import torch.nn as nn
 import torch.autograd as autograd
-
+import collections
 import math
 
 
@@ -91,16 +91,17 @@ class GateJunction(nn.Module):
         out_channels = settings[index][1]
         mid_channels = math.ceil(max(out_channels // CONFIG.gate_reduction, 1) / 8) * 8
 
-        self.op = nn.Sequential(
-            nn.Conv2d(
+        self.op = nn.Sequential(collections.OrderedDict(m for m in [
+            ('conv1', nn.Conv2d(
                 in_channels, mid_channels, kernel_size=1,
-                padding=0, bias=False),
-            normalization(mid_channels),
-            activation(inplace=True),
-            nn.Conv2d(
+                padding=0, bias=False)),
+            ('norm1', normalization(mid_channels)),
+            ('act1', activation(inplace=True)),
+            ('conv2', nn.Conv2d(
                 mid_channels, (len(self.indexes) + 1) * out_channels, kernel_size=1,
-                padding=0, bias=True),
-            Reshape(len(self.indexes) + 1, out_channels))
+                padding=0, bias=True)),
+            ('reshape', Reshape(len(self.indexes) + 1, out_channels)),
+        ] if m[1] is not None))
 
     def forward(self, y, x):
         for i in self.indexes:

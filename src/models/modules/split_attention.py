@@ -1,4 +1,5 @@
 import torch.nn as nn
+import collections
 import math
 
 
@@ -10,13 +11,14 @@ class SplitAttentionModule(nn.Module):
         channels = max(out_channels * radix // reduction, 1)
         channels = math.ceil(channels / 8) * 8
 
-        self.op = nn.Sequential(
-            nn.Conv2d(
-                out_channels, channels, 1, padding=0, groups=groups, bias=True),
-            normalization(channels),
-            activation(inplace=True),
-            nn.Conv2d(
-                channels, out_channels * radix, 1, padding=0, groups=groups, bias=True))
+        self.op = nn.Sequential(collections.OrderedDict([
+            ('conv1', nn.Conv2d(
+                out_channels, channels, 1, padding=0, groups=groups, bias=True)),
+            ('norm1', normalization(channels)),
+            ('act1', activation(inplace=True)),
+            ('conv2', nn.Conv2d(
+                channels, out_channels * radix, 1, padding=0, groups=groups, bias=True)),
+        ]))
 
         self.radix = radix
 

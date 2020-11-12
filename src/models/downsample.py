@@ -1,5 +1,7 @@
 from .modules import ChannelPad, DropBlock
+
 import torch.nn as nn
+import collections
 
 
 class NoneDownsample(nn.Identity):
@@ -13,15 +15,18 @@ class BasicDownsample(nn.Sequential):
 
     def __init__(self, in_channels, out_channels, stride,
                  normalization, activation, dropblock, **kwargs):
+        modules = []
+
         if stride != 1 or in_channels != out_channels:
-            super().__init__(
-                nn.Conv2d(
+            modules.extend([
+                ('conv', nn.Conv2d(
                     in_channels, out_channels, kernel_size=1,
-                    stride=stride, padding=0, bias=False),
-                normalization(out_channels),
-                DropBlock() if dropblock else nn.Identity())
-        else:
-            super().__init__()
+                    stride=stride, padding=0, bias=False)),
+                ('norm', normalization(out_channels)),
+                ('drop', None if not dropblock else DropBlock()),
+            ])
+
+        super().__init__(collections.OrderedDict(m for m in modules if m[1] is not None))
 
 
 class TweakedDownsample(nn.Sequential):
@@ -31,17 +36,19 @@ class TweakedDownsample(nn.Sequential):
         modules = []
 
         if stride != 1:
-            modules.append(nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True))
+            modules.append(('pool', nn.AvgPool2d(
+                kernel_size=stride, stride=stride, ceil_mode=True)))
 
         if in_channels != out_channels:
             modules.extend([
-                nn.Conv2d(
+                ('conv', nn.Conv2d(
                     in_channels, out_channels, kernel_size=1,
-                    stride=1, padding=0, bias=False),
-                normalization(out_channels),
-                DropBlock() if dropblock else nn.Identity()])
+                    stride=1, padding=0, bias=False)),
+                ('norm', normalization(out_channels)),
+                ('drop', None if not dropblock else DropBlock()),
+            ])
 
-        super().__init__(*modules)
+        super().__init__(collections.OrderedDict(m for m in modules if m[1] is not None))
 
 
 class AverageDownsample(nn.Sequential):
@@ -51,9 +58,10 @@ class AverageDownsample(nn.Sequential):
         modules = []
 
         if stride != 1:
-            modules.append(nn.AvgPool2d(kernel_size=stride, stride=stride, ceil_mode=True))
+            modules.append(('pool', nn.AvgPool2d(
+                kernel_size=stride, stride=stride, ceil_mode=True)))
 
         if in_channels != out_channels:
-            modules.append(ChannelPad(out_channels - in_channels))
+            modules.append(('pad', ChannelPad(out_channels - in_channels)))
 
-        super().__init__(*modules)
+        super().__init__(collections.OrderedDict(m for m in modules if m[1] is not None))

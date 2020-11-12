@@ -1,8 +1,10 @@
-import torch.nn as nn
 from .config import CONFIG
 from .modules import ShakeDrop, SignalAugmentation, SEModule, StochasticDepth
 from .downsample import NoneDownsample
 from .junction import NoneJunction
+
+import torch.nn as nn
+import collections
 
 
 class _Block(nn.Module):
@@ -31,10 +33,11 @@ class _Block(nn.Module):
                 out_channels, CONFIG.semodule_reduction, activation=activation)
 
         # noise
-        self.noise = nn.Sequential(
-            SignalAugmentation(std=signalaugment),
-            ShakeDrop(drop_prob=shakedrop * (index + 1) / len(settings)),
-            StochasticDepth(drop_prob=stochdepth * (index + 1) / len(settings)))
+        self.noise = nn.Sequential(collections.OrderedDict([
+            ('signalaug', SignalAugmentation(std=signalaugment)),
+            ('shakedrop', ShakeDrop(drop_prob=shakedrop * (index + 1) / len(settings))),
+            ('stochdepth', StochasticDepth(drop_prob=stochdepth * (index + 1) / len(settings))),
+        ]))
 
         # junction
         self.junction = junction(
