@@ -293,7 +293,7 @@ large_models = {
         stem=MobileNetStem, head=MobileNetV2Head,
         block=MobileNetBlock, operation=MobileNetOperation,
         downsample=NoneDownsample, activation=nn.ReLU6,
-        seoperation=False, sesigmoid=None),
+        seoperation=False, sereduction=None, sesigmoid=None),
 
     'MobileNetV2-0.5': update_params(
         large_basic_params,
@@ -302,7 +302,7 @@ large_models = {
         stem=MobileNetStem, head=MobileNetV2Head,
         block=MobileNetBlock, operation=MobileNetOperation,
         downsample=NoneDownsample, activation=nn.ReLU6,
-        seoperation=False, sesigmoid=None),
+        seoperation=False, sereduction=None, sesigmoid=None),
 
     'MobileNetV3-large': update_params(
         large_basic_params,
@@ -311,7 +311,8 @@ large_models = {
         stem=MobileNetStem, head=MobileNetV3Head,
         block=MobileNetBlock, operation=MobileNetOperation,
         downsample=NoneDownsample, activation=HSwish,
-        seoperation=True, sesigmoid=lambda: HSigmoid(inplace=True)),
+        seoperation=True, sereduction=4,
+        sesigmoid=lambda: HSigmoid(inplace=True)),
 
     'EfficientNet-B0': update_params(
         large_basic_params,
@@ -320,7 +321,7 @@ large_models = {
         stem=MobileNetStem, head=MobileNetV2Head,
         block=MobileNetBlock, operation=MobileNetOperation,
         downsample=NoneDownsample, activation=Swish,
-        seoperation=True, sesigmoid=nn.Sigmoid),
+        seoperation=True, sereduction=24, sesigmoid=nn.Sigmoid),
 
     'EfficientNet-B1': update_params(
         large_basic_params,
@@ -329,16 +330,16 @@ large_models = {
         stem=MobileNetStem, head=MobileNetV2Head,
         block=MobileNetBlock, operation=MobileNetOperation,
         downsample=NoneDownsample, activation=Swish,
-        seoperation=True, sesigmoid=nn.Sigmoid),
+        seoperation=True, sereduction=24, sesigmoid=nn.Sigmoid),
 
     'EfficientNet-B2': update_params(
         large_basic_params,
         layers=make_efficientnet_layers(1.1, 1.2),
-        stem_channels=32, head_channels=1280,
+        stem_channels=32, head_channels=1408,
         stem=MobileNetStem, head=MobileNetV2Head,
         block=MobileNetBlock, operation=MobileNetOperation,
         downsample=NoneDownsample, activation=Swish,
-        seoperation=True, sesigmoid=nn.Sigmoid),
+        seoperation=True, sereduction=24, sesigmoid=nn.Sigmoid),
 
     'DenseNet-121': update_params(
         large_basic_params,

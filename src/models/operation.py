@@ -1,4 +1,3 @@
-from .config import CONFIG
 from .modules import DropBlock, SEModule, SKConv2d, BlurPool2d, SplitAttentionModule
 
 import torch.nn as nn
@@ -209,7 +208,8 @@ class TweakedSlectedKernelOperation(nn.Sequential):
 class MobileNetOperation(nn.Sequential):
 
     def __init__(self, in_channels, out_channels, kernel, stride, expansion,
-                 normalization, activation, dropblock, seoperation, sesigmoid, **kwargs):
+                 normalization, activation, dropblock,
+                 seoperation, sereduction, sesigmoid, **kwargs):
         channels = int(in_channels * expansion)
         modules = []
 
@@ -230,8 +230,7 @@ class MobileNetOperation(nn.Sequential):
             ('norm2', normalization(channels)),
             ('drop2', None if not dropblock else DropBlock()),
             ('semodule', None if not seoperation else SEModule(
-                channels, reduction=CONFIG.semodule_reduction,
-                activation=nn.ReLU, sigmoid=sesigmoid)),
+                channels, reduction=sereduction, activation=nn.ReLU, sigmoid=sesigmoid)),
             ('act2', activation(inplace=True)),
             ('conv3', nn.Conv2d(
                 channels, out_channels, kernel_size=1, padding=0,
