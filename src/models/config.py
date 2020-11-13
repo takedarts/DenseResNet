@@ -4,7 +4,7 @@ class Config(object):
         self.semodule_reduction = 16
         self.gate_reduction = 8
         self.dense_connections = 4
-        self.skip_connections = 4
+        self.skip_connections = 16
         self.dropblock_size = 7
         self.save_weights = False
 
