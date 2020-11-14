@@ -14,10 +14,6 @@ def load_dataset(dataset_name, data_dir, crop_size, train, stdaug,
         return ImagenetDataset(
             os.path.join(data_dir, 'imagenet'), 1000, crop_size,
             train, stdaug, autoaugment, random_erasing_prob, random_erasing_type)
-    elif dataset_name == 'tinyimagenet':
-        return TinyImagenetDataset(
-            os.path.join(data_dir, 'tinyimagenet'), 200, crop_size,
-            train, stdaug, autoaugment, random_erasing_prob, random_erasing_type)
     elif dataset_name == 'cifar10':
         return Cifar10Dataset(
             os.path.join(data_dir, 'cifar'),
@@ -81,49 +77,6 @@ class ImagenetDataset(torchvision.datasets.ImageFolder):
             transforms = [
                 torchvision.transforms.Resize(round(crop_size / 224 * 256)),
                 torchvision.transforms.CenterCrop(crop_size),
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(mean=self.MEAN, std=self.STD)]
-
-        if stdaug and autoaugment:
-            transforms.insert(2, ImageNetPolicy())
-
-        if random_erasing_prob != 0:
-            value = 0 if random_erasing_type == 'zero' else 'random'
-            transforms.append(torchvision.transforms.RandomErasing(
-                p=random_erasing_prob, value=value))
-
-        super().__init__(path, torchvision.transforms.Compose(transforms))
-        self.num_classes = num_classes
-
-    def __getitem__(self, idx):
-        image, label = super().__getitem__(idx)
-        label_array = numpy.zeros(self.num_classes, dtype=numpy.float32)
-        label_array[label] = 1
-
-        return image, label_array
-
-
-class TinyImagenetDataset(torchvision.datasets.ImageFolder):
-    MEAN = [0.4802, 0.4481, 0.3975]
-    STD = [0.2770, 0.2691, 0.2821]
-
-    def __init__(self, path, num_classes, crop_size, train, stdaug,
-                 autoaugment, random_erasing_prob, random_erasing_type):
-        if train:
-            path = os.path.join(path, 'train')
-        else:
-            path = os.path.join(path, 'valid')
-
-        if stdaug:
-            transforms = [
-                torchvision.transforms.RandomCrop(crop_size),
-                torchvision.transforms.RandomHorizontalFlip(),
-                torchvision.transforms.ColorJitter(
-                    brightness=0.4, contrast=0.4, saturation=0.4),
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Normalize(mean=self.MEAN, std=self.STD)]
-        else:
-            transforms = [
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Normalize(mean=self.MEAN, std=self.STD)]
 

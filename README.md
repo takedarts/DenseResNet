@@ -40,22 +40,6 @@ DenseResNets are published in a following paper:
     % python src/prepare.py imagenet
     ```
 
-### [TinyImagenet]
-1. Download a following file from [https://tiny-imagenet.herokuapp.com/](https://tiny-imagenet.herokuapp.com/).
-    - tiny-imagenet-200.zip
-2. Save these files in `data/tinyimagenet`.
-    ```
-    % tree data
-    data
-    └── tinyimagenet
-        ├── readme.txt
-        └── tiny-imagenet-200.zip
-    ```
-3. Run a preparation script: `src/prepare.py`.
-    ```
-    % python src/prepare.py tinyimagenet
-    ```
-
 ## Training
 1. Create a model file.
     A model file must be created before training. A following command creates a initialized model file.
