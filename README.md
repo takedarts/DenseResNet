@@ -1,3 +1,8 @@
+## New implementation was published
+New Rposigory: [https://github.com/takedarts/skipresnet](https://github.com/takedarts/skipresnet)
+
+The new codes are implemented with Pytorch Lightning and you can train image classification models using not only GPUs but also TPUs.
+
 # What is Skip-ResNet ?
 
 [<img alt="Architecture of DenseResNets" src="res/architecture.png" width="250px" align="right">](res/architecture.png)
